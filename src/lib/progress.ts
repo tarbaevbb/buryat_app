@@ -110,7 +110,7 @@ export function weekXp(dailyXp: Record<string, number>, today = new Date()): num
 
 /**
  * XP за подход в «Повторении». Формула должна совпадать с
- * `fn_award_review` в supabase/schema.sql.
+ * `fn_award_review` в supabase/migrations/*.sql.
  */
 export function reviewXp(correct: number, total: number): number {
   const safeCorrect = Math.max(0, Math.min(Math.floor(correct), Math.max(0, total)))

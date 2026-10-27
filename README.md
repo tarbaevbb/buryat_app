@@ -29,34 +29,42 @@
 ## Быстрый старт
 
 ```bash
-npm install
-npm run dev       # http://localhost:5173 — работает в браузере (mock-режим)
+npm run dev     # http://localhost:5173 — работает в браузере (mock-режим)
+npm run verify  # всё, что проверяет CI: линтер, типы, тесты, сборка, размер
 ```
 
 В браузере Telegram SDK подменяется заглушкой (`src/telegram/mock.ts`),
 поэтому можно спокойно верстать и тестировать без открытия Telegram.
 
+Отдельные команды:
+
 ```bash
-npm test           # 147 тестов: логика, курс, синхронизация, рендеринг
-npm run typecheck  # проверка типов без сборки
-npm run build      # сборка в dist/
-npm run preview    # локальный просмотр сборки
+npm run lint             # ESLint: react-hooks и доступность (a11y)
+npm run typecheck        # проверка типов без сборки
+npm test                 # 172 теста: логика, курс, синхронизация, рендеринг
+npm run build            # сборка в dist/
+npm run size             # контроль размера бандла
+npm run check:migrations # миграции на локальном Postgres (нужен Docker)
+npm run preview          # локальный просмотр сборки
 ```
 
-Эти же команды прогоняются в CI (`.github/workflows/ci.yml`) на каждый push
-и pull request, поэтому расхождение локального и удалённого результата
-маловероятно.
+## Проверки (GitHub Actions)
+
+| Workflow | Когда запускается | Что проверяет |
+|---|---|---|
+| `ci.yml` | push в `main`, PR, вручную | линтер, типы, 172 теста, сборка, размер бандла, Deno-проверка функции, миграции на Postgres |
+| `secrets.yml` | push, PR | утечки секретов (gitleaks + проверки токенов Telegram и ключей Supabase) |
+| `codeql.yml` | push в `main`, PR, по расписанию | статический анализ безопасности |
+| `deploy.yml` | push в `main` | публикация на GitHub Pages |
+| `deploy-supabase.yml` | push в `main` (при изменении `supabase/**`) | миграции и Edge Function в облако |
+
+`ci.yml` разбит на независимые job'ы (`lint`, `test`, `build`, `deno`,
+`migrations`) — они идут параллельно, а `ci-ok` собирает единый статус для
+branch protection.
 
 ## Деплой
 
 ### GitHub Pages (настроен автоматически)
-
-В репозитории есть два workflow:
-
-| Workflow | Когда запускается | Что делает |
-|---|---|---|
-| `ci.yml` | push в `main`, pull request, вручную | `npm ci` → типы → 147 тестов → сборка |
-| `deploy.yml` | push в `main`, вручную | то же + публикация на GitHub Pages |
 
 Приложение уже опубликовано: **https://tarbaevbb.github.io/buryat_app/**
 
@@ -94,19 +102,22 @@ VITE_SUPABASE_ANON_KEY
 и общий рейтинг:
 
 1. Создайте проект на [supabase.com](https://supabase.com).
-2. Примените схему: **SQL Editor** → выполните `supabase/schema.sql`.
-3. Установите секрет для Edge Function:
+2. Примените миграции и задеплойте функцию (одна команда после `link`):
 
    ```bash
    supabase login
    supabase link --project-ref <your-ref>
+   supabase db push --linked
    supabase secrets set TELEGRAM_BOT_TOKEN=123456:AA...
    supabase functions deploy telegram-auth --no-verify-jwt
    ```
 
    (`SUPABASE_URL` и `SUPABASE_SERVICE_ROLE_KEY` подставляются автоматически.)
 
-4. Создайте `.env` из `.env.example`:
+   Альтернатива без CLI: вставьте содержимое
+   `supabase/migrations/*.sql` в **SQL Editor** и выполните.
+
+3. Создайте `.env` из `.env.example`:
 
    ```bash
    cp .env.example .env
@@ -117,7 +128,7 @@ VITE_SUPABASE_ANON_KEY
    VITE_SUPABASE_ANON_KEY=<anon key>
    ```
 
-5. Перезапустите dev-сервер / пересоберите фронтенд.
+4. Перезапустите dev-сервер / пересоберите фронтенд.
 
 Как это работает:
 
@@ -139,15 +150,28 @@ VITE_SUPABASE_ANON_KEY
 
 Токен бота **никогда** не попадает во фронтенд — только в секреты функции.
 
-### Обновление уже настроенного проекта
+### Автодеплой облака из CI
 
-Если схема была применена раньше, выполните `supabase/schema.sql` повторно —
-файл идемпотентен и добавит новые функции (`fn_fetch_progress`,
-`fn_push_progress`, `fn_reset_progress`, `fn_award_review`). Функция
-`fn_sync_progress` больше не используется, её можно удалить вручную:
+`.github/workflows/deploy-supabase.yml` применяет миграции и публикует
+функцию при пуше в `main`. Нужны секреты в
+**Settings → Secrets and variables → Actions**:
 
-```sql
-drop function if exists public.fn_sync_progress(int, jsonb, jsonb);
+| Секрет | Где взять |
+|---|---|
+| `SUPABASE_ACCESS_TOKEN` | [Account → Access Tokens](https://supabase.com/dashboard/account/tokens) |
+| `SUPABASE_PROJECT_ID` | ref из URL проекта: `https://<ref>.supabase.co` |
+| `SUPABASE_DB_PASSWORD` | пароль базы, заданный при создании проекта |
+
+Без этих секретов workflow не падает — шаги деплоя просто пропускаются,
+чтобы публикация фронтенда не зависела от настройки облака.
+
+### Проверка миграций локально
+
+Миграции проверяются на настоящем Postgres (нужен Docker) — повторное
+применение, RLS, наличие функций и поведение RPC:
+
+```bash
+npm run check:migrations
 ```
 
 ## Структура проекта
@@ -165,8 +189,12 @@ src/
   telegram/        SDK: типизация, тема, mock-режим, MainButton/BackButton
   lib/             нормализация ответов, SRS, даты, Supabase, облако
 supabase/
-  schema.sql                таблицы, RLS, RPC-функции
+  config.toml               настройки проекта и Edge Functions
+  migrations/               SQL-миграции (таблицы, RLS, RPC)
   functions/telegram-auth/  проверка initData и выдача сессии
+scripts/
+  check-bundle-size.mjs     контроль размера сборки
+  check-migrations.sh       проверка миграций на локальном Postgres
 docs/
   content-review.md         чек-лист для проверки бурятского носителем
   architecture.md           как всё устроено внутри

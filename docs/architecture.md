@@ -186,25 +186,61 @@ fn_fetch_progress()        ← полный снимок состояния с �
 
 ## Тесты
 
+Всего 172 теста в 13 файлах:
+
 ```
-src/lib/normalize.test.ts       6 тестов — проверка ответов
-src/lib/progress.test.ts       50+ тестов — сердца, серия, уровни, слияние
-src/lib/srs.test.ts            10 тестов — подбор слов для повторения
-src/lib/cloud.test.ts          15 тестов — разбор ответов Supabase
-src/lib/schemaParity.test.ts   10 тестов — совпадение формул клиента и SQL
-src/data/course.test.ts        13 тестов — целостность курса и упражнений
-src/store/progressStore.test.ts 21 тест — награды, сердца, сброс, снимки
-src/store/sessionStore.test.ts 10 тестов — ход урока, итоги
-src/store/courseFlow.test.ts    6 тестов — прохождение курса целиком
-src/store/lessonAccuracy.test.ts 4 теста — точность не «разъезжается»
-src/hooks/useCloudAuth.test.ts  12 тестов — синхронизация и офлайн-сброс
-src/App.test.tsx                5 тестов — рендеринг всех экранов
+src/App.test.tsx                  5 тестов — рендеринг всех экранов
+src/data/course.test.ts          13 тестов — целостность курса и упражнений
+src/hooks/useCloudAuth.test.ts    9 тестов — синхронизация и офлайн-сброс
+src/lib/cloud.test.ts            14 тестов — разбор ответов Supabase
+src/lib/normalize.test.ts         6 тестов — проверка ответов
+src/lib/progress.test.ts         39 тестов — сердца, серия, уровни, слияние
+src/lib/schemaParity.test.ts     12 тестов — совпадение формул клиента и SQL
+src/lib/srs.test.ts              10 тестов — подбор слов для повторения
+src/store/courseFlow.test.ts      6 тестов — прохождение курса целиком
+src/store/lessonAccuracy.test.ts  4 теста — точность не «разъезжается»
+src/store/progressStore.test.ts  21 тест — награды, сердца, сброс, снимки
+src/store/sessionStore.test.ts   10 тестов — ход урока, итоги
+supabase/functions/telegram-auth/initData.test.ts
+                                 23 теста — проверка подписи Telegram
 ```
 
 Отдельно проверяется: во всех заданиях есть правильный ответ; id уникальны и
 не содержат похожих не-ASCII символов; формулы XP и сердец на клиенте совпадают
 со SQL; слияние прогресса идемпотентно и коммутативно; сброс в офлайне
-не даёт облаку вернуть старый прогресс.
+не даёт облаку вернуть старый прогресс; подпись `initData` проверяется
+независимой реализацией алгоритма через `node:crypto`.
+
+### Проверка подписи Telegram
+
+Логика вынесена в `supabase/functions/telegram-auth/initData.ts`, а не
+оставлена внутри обработчика. Причина практическая: её можно тестировать
+без поднятия Deno и без сетевых вызовов.
+
+Алгоритм: `secret_key = HMAC_SHA256(bot_token, "WebAppData")`,
+`hash = HMAC_SHA256(data_check_string, secret_key)`. Порядок аргументов
+легко перепутать, и тогда проверка молча не сходится никогда — тесты
+сверяют результат с независимой реализацией через `node:crypto`.
+
+### Проверки в CI
+
+| Job | Что делает |
+|---|---|
+| `lint` | ESLint: `react-hooks` (зависимости эффектов), `jsx-a11y` (доступность) |
+| `test` | типы приложения + 172 теста |
+| `build` | сборка + контроль размера бандла (лимиты в `scripts/bundle-budgets.json`) |
+| `deno` | `deno lint`, `deno fmt --check`, `deno check` для Edge Function |
+| `migrations` | миграции на чистом Postgres: применяются, идемпотентны, RLS и RPC работают |
+| `ci-ok` | единый итоговый статус для branch protection |
+
+Плюс отдельные workflow: `secrets.yml` (gitleaks и проверка, что в репозиторий
+не попали токен бота или ключи Supabase), `codeql.yml` (статический анализ
+безопасности), `deploy.yml` (Pages), `deploy-supabase.yml` (миграции и
+функция в облако).
+
+Здесь же лежат локальные аналоги: `npm run verify` повторяет
+`lint → typecheck → test → build → size`, а `npm run check:migrations`
+поднимает Postgres в Docker и проверяет миграции (нужен Docker).
 
 ## Известные ограничения
 

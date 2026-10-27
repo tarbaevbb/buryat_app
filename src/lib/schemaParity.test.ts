@@ -1,10 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { HEART_REFILL_MS, reviewXp } from './progress'
 
-// В jsdom `import.meta.url` — это http-адрес, поэтому путь берём от корня проекта.
-const schema = readFileSync(resolve(process.cwd(), 'supabase/schema.sql'), 'utf8')
+/**
+ * Схема читается из миграций — это единственный источник правды
+ * (файл supabase/schema.sql был дубликатом и удалён). Если миграций
+ * станет несколько, содержимое просто склеится в порядке применения.
+ */
+const migrationsDir = resolve(process.cwd(), 'supabase/migrations')
+const schema = readdirSync(migrationsDir)
+  .filter((f) => f.endsWith('.sql'))
+  .sort()
+  .map((f) => readFileSync(resolve(migrationsDir, f), 'utf8'))
+  .join('\n')
 
 /**
  * Формулы награды и восстановления сердец продублированы на клиенте
@@ -72,5 +81,25 @@ describe('согласованность клиента и схемы Supabase',
 
   it('прогресс уроков на сервере не суммируется повторно', () => {
     expect(schema).toContain('total_xp   = greatest(up.total_xp, excluded.total_xp)')
+  })
+
+  /**
+   * Регрессия: `RETURNS TABLE (xp, gems, ...)` объявляет переменные с теми же
+   * именами, что и колонки `profiles`. Выражение `set xp = xp + v_xp` тогда
+   * падает с «column reference "xp" is ambiguous» — награда не начисляется
+   * вообще. Лечится алиасом таблицы, его и проверяем.
+   */
+  it('в начисляющих функциях есть алиас таблицы (иначе ambiguous column)', () => {
+    expect(schema).toContain('update public.profiles as p')
+    expect(schema).toContain('set xp   = p.xp + v_xp')
+    expect(schema).toContain('returning p.xp into v_total')
+    // Голого `set xp = xp +` быть не должно.
+    expect(schema).not.toMatch(/set xp = xp \+/)
+  })
+
+  it('каждая начисляющая функция возвращает total_xp, а не level_xp', () => {
+    // Клиент читает server.totalXp из поля total_xp.
+    expect(schema).toContain('returns table (xp integer, gems integer, streak integer, total_xp integer)')
+    expect(schema).not.toContain('level_xp integer')
   })
 })

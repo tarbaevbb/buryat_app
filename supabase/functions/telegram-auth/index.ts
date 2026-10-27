@@ -1,31 +1,24 @@
 // =====================================================================
 // Supabase Edge Function: telegram-auth
-// Проверяет Telegram.WebApp.initData по HMAC-SHA256 (секрет —
-// HMAC_SHA256(bot_token, "WebAppData")) и выдаёт сессию Supabase.
+//
+// Проверяет Telegram.WebApp.initData по HMAC-SHA256 и выдаёт сессию
+// Supabase, привязанную к Telegram-аккаунту.
 //
 // Секреты:
 //   supabase secrets set TELEGRAM_BOT_TOKEN=123:ABC
 //   SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY подставляются автоматически
 //
 // Деплой: supabase functions deploy telegram-auth --no-verify-jwt
+//
+// Логика проверки подписи живёт в ./initData.ts и покрыта тестами
+// (supabase/functions/telegram-auth/initData.test.ts).
 // =====================================================================
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4'
+import { createClient } from '@supabase/supabase-js'
+import { passwordFor, verifyInitData } from './initData.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
-}
-
-const MAX_AUTH_AGE_SECONDS = 24 * 60 * 60
-
-interface TgUser {
-  id: number
-  first_name?: string
-  last_name?: string
-  username?: string
-  language_code?: string
-  photo_url?: string
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
 function json(body: unknown, status = 200): Response {
@@ -35,66 +28,9 @@ function json(body: unknown, status = 200): Response {
   })
 }
 
-function bytesToHex(bytes: ArrayBuffer): string {
-  return [...new Uint8Array(bytes)]
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
-}
-
-async function hmacSha256(
-  key: Uint8Array | string,
-  message: string,
-): Promise<ArrayBuffer> {
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    typeof key === 'string' ? new TextEncoder().encode(key) : key,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  )
-  return crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(message))
-}
-
-/** Проверка подписи initData. */
-async function verifyInitData(
-  initData: string,
-  botToken: string,
-): Promise<{ user: TgUser; authDate: number } | null> {
-  const params = new URLSearchParams(initData)
-  const hash = params.get('hash')
-  if (!hash) return null
-  params.delete('hash')
-
-  const dataCheckString = [...params.entries()]
-    .map(([k, v]) => `${k}=${v}`)
-    .sort()
-    .join('\n')
-
-  const secretKey = await hmacSha256('WebAppData', botToken)
-  const signature = await hmacSha256(new Uint8Array(secretKey), dataCheckString)
-  if (bytesToHex(signature) !== hash.toLowerCase()) return null
-
-  const authDate = Number(params.get('auth_date') ?? 0)
-  if (!authDate) return null
-  if (Date.now() / 1000 - authDate > MAX_AUTH_AGE_SECONDS) return null
-
-  const rawUser = params.get('user')
-  if (!rawUser) return null
-  try {
-    const user = JSON.parse(rawUser) as TgUser
-    return user?.id ? { user, authDate } : null
-  } catch {
-    return null
-  }
-}
-
-/** Пароль детерминирован: позволяет повторно войти тем же Telegram-аккаунтом. */
-function passwordFor(userId: number, serviceKey: string): string {
-  return `${serviceKey.slice(0, 24)}.${userId}.buryat`
-}
-
 Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
 
   try {
     const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN')
@@ -117,6 +53,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       auth: { autoRefreshToken: false, persistSession: false },
     })
 
+    // Локальная часть адреса: настоящая почта не нужна, вход идёт по паролю.
     const email = `tg${user.id}@buryat.local`
     const password = passwordFor(user.id, serviceKey)
     const profileFields = {
@@ -128,7 +65,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       language_code: user.language_code ?? null,
     }
 
-    // 1) Создаём auth-пользователя (идемпотентно).
+    // 1) Создаём auth-пользователя. Если он уже есть — просто входим.
     const created = await admin.auth.admin.createUser({
       email,
       password,
@@ -139,12 +76,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
     let authUserId: string | undefined = created.data?.user?.id
 
     if (!authUserId) {
-      // Пользователь уже существует — входим по детерминированному паролю.
       const first = await admin.auth.signInWithPassword({ email, password })
+
       if (first.error) {
-        // Пароль мог устареть при смене service-role ключа: находим пользователя
-        // через auth API и переустанавливаем пароль.
-        const { data: found } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
+        // Пароль мог устареть (например, сменился service-role ключ).
+        // Находим пользователя и переустанавливаем пароль.
+        const { data: found } = await admin.auth.admin.listUsers({
+          page: 1,
+          perPage: 1000,
+        })
         const match = found?.users?.find((u) => u.email === email)
         if (!match) {
           return json({ error: 'auth_failed', detail: first.error.message }, 500)
@@ -152,9 +92,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
         await admin.auth.admin.updateUserById(match.id, { password })
         authUserId = match.id
       } else if (first.data.session) {
-        await admin.from('profiles').upsert({ id: first.data.user.id, ...profileFields }, {
-          onConflict: 'id',
-        })
+        // Быстрый путь: профиль обновляем и сразу отдаём существующую сессию.
+        await admin
+          .from('profiles')
+          .upsert({ id: first.data.user.id, ...profileFields }, { onConflict: 'id' })
+
         return json({
           access_token: first.data.session.access_token,
           refresh_token: first.data.session.refresh_token,
@@ -170,11 +112,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
     }
 
-    // 2) Профиль строго по id auth-пользователя.
-    await admin.from('profiles').upsert(
-      { id: authUserId, ...profileFields },
-      { onConflict: 'id' },
-    )
+    if (!authUserId) return json({ error: 'auth_failed' }, 500)
+
+    // 2) Профиль строго по id auth-пользователя, иначе RLS его не увидит.
+    await admin
+      .from('profiles')
+      .upsert({ id: authUserId, ...profileFields }, { onConflict: 'id' })
 
     // 3) Выдаём сессию.
     const { data: session, error: sessionError } = await admin.auth.signInWithPassword({

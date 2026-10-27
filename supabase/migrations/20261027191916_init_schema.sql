@@ -249,11 +249,14 @@ begin
 
   v_streak := public.fn_register_activity(v_uid);
 
-  update public.profiles
-     set xp = xp + v_xp,
-         gems = gems + v_gems
-   where id = v_uid
-   returning profiles.xp into v_total;
+  -- Алиас обязателен: имена колонок совпадают с выходными параметрами
+  -- (RETURNS TABLE (xp, gems, ...)), и без алиаса PostgreSQL не может
+  -- отличить переменную от колонки.
+  update public.profiles as p
+     set xp   = p.xp + v_xp,
+         gems = p.gems + v_gems
+   where p.id = v_uid
+   returning p.xp into v_total;
 
   return query select v_xp, v_gems, v_streak, v_total;
 end $$;
@@ -310,11 +313,14 @@ begin
 
   v_streak := public.fn_register_activity(v_uid);
 
-  update public.profiles
-     set xp = xp + v_xp,
-         gems = gems + v_gems
-   where id = v_uid
-   returning profiles.xp into v_total;
+  -- Алиас обязателен: имена колонок совпадают с выходными параметрами
+  -- (RETURNS TABLE (xp, gems, ...)), и без алиаса PostgreSQL не может
+  -- отличить переменную от колонки.
+  update public.profiles as p
+     set xp   = p.xp + v_xp,
+         gems = p.gems + v_gems
+   where p.id = v_uid
+   returning p.xp into v_total;
 
   return query select v_xp, v_gems, v_streak, v_total;
 end $$;

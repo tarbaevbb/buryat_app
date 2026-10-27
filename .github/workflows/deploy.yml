@@ -1,6 +1,7 @@
 name: Deploy to GitHub Pages
 
-# Деплой только с main, после успешных проверок из ci.yml.
+# Публикация фронтенда на GitHub Pages.
+# Запускается после успешного CI, чтобы на прод не попал битый код.
 on:
   push:
     branches: [main]
@@ -19,37 +20,55 @@ jobs:
   build:
     name: Сборка
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
 
-      - name: Node 24
-        uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
 
-      - name: Установка зависимостей
-        run: npm ci
+      - run: npm ci
 
-      # Тесты и типы гоняем здесь же: деплой не должен зависеть от того,
-      # успел ли отработать отдельный workflow.
-      - name: Проверка типов
+      # Проверки повторяем здесь: деплой не должен зависеть от того,
+      # успел ли завершиться отдельный workflow CI.
+      - name: Линтер
+        run: npm run lint
+
+      - name: Типы
         run: npm run typecheck
 
       - name: Тесты
         run: npm test
 
-      # Ключи Supabase подставляем из секретов репозитория.
-      # Если секреты не заданы — приложение соберётся в локальном режиме
-      # (прогресс в localStorage), это рабочий сценарий, а не ошибка.
+      # Ключи Supabase берём из секретов репозитория.
+      # Без них приложение соберётся в локальном режиме (прогресс
+      # в localStorage) — это рабочий сценарий, а не ошибка.
       - name: Сборка
         run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Лимиты размера бандла
+        run: node scripts/check-bundle-size.mjs
+
+      # Проверяем, что облако действительно включилось в сборке.
+      # Иначе легко выкатить «локальный» билд и не заметить этого.
+      - name: Проверка режима сборки
+        run: |
+          if [ -n "${{ secrets.VITE_SUPABASE_URL }}" ]; then
+            if grep -q "supabase.co" dist/assets/*.js; then
+              echo "Облачный режим включён в сборке."
+            else
+              echo "::error::Секреты заданы, но URL Supabase не попал в бандл"
+              exit 1
+            fi
+          else
+            echo "Секреты Supabase не заданы — сборка в локальном режиме."
+          fi
 
       - name: Настройка Pages
         uses: actions/configure-pages@v6
@@ -73,3 +92,11 @@ jobs:
       - name: Деплой на Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+      - name: Итог
+        run: |
+          {
+            echo "### Опубликовано"
+            echo ""
+            echo "URL: ${{ steps.deployment.outputs.page_url }}"
+          } >> "$GITHUB_STEP_SUMMARY"

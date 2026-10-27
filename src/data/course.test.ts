@@ -35,7 +35,6 @@ describe('структура курса', () => {
 
   it('нет не-ASCII символов в id (защита от «похожих» букв)', () => {
     for (const v of allVocabItems) {
-      // eslint-disable-next-line no-control-regex
       expect(/^[a-z0-9_]+$/.test(v.id), `плохой id: ${v.id}`).toBe(true)
     }
   })
