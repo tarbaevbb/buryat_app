@@ -1,0 +1,60 @@
+name: CI
+
+# Проверки на каждый push в main и на любой pull request.
+# Локально то же самое: npm run typecheck && npm test && npm run build
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Устаревшие запуски той же ветки отменяем, чтобы не тратить минуты.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Типы, тесты, сборка
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Node 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      # npm ci ставит строго по package-lock.json и падает, если lockfile
+      # рассинхронизирован с package.json — это ловит забытый `npm i` после
+      # добавления зависимости.
+      - name: Установка зависимостей
+        run: npm ci
+
+      - name: Проверка типов
+        run: npm run typecheck
+
+      - name: Тесты
+        run: npm test
+
+      - name: Сборка
+        run: npm run build
+
+      - name: Размер бандла
+        run: |
+          echo "### Размер сборки" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Файл | Размер | gzip |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          for f in dist/assets/*; do
+            raw=$(du -h "$f" | cut -f1)
+            gz=$(gzip -c "$f" | wc -c | awk '{printf "%.1f KB", $1/1024}')
+            echo "| \`$(basename "$f")\` | $raw | $gz |" >> "$GITHUB_STEP_SUMMARY"
+          done

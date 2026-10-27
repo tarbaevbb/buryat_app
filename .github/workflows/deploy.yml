@@ -1,0 +1,75 @@
+name: Deploy to GitHub Pages
+
+# Деплой только с main, после успешных проверок из ci.yml.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Сборка
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Node 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Установка зависимостей
+        run: npm ci
+
+      # Тесты и типы гоняем здесь же: деплой не должен зависеть от того,
+      # успел ли отработать отдельный workflow.
+      - name: Проверка типов
+        run: npm run typecheck
+
+      - name: Тесты
+        run: npm test
+
+      # Ключи Supabase подставляем из секретов репозитория.
+      # Если секреты не заданы — приложение соберётся в локальном режиме
+      # (прогресс в localStorage), это рабочий сценарий, а не ошибка.
+      - name: Сборка
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Настройка Pages
+        uses: actions/configure-pages@v6
+
+      - name: Загрузка артефакта
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    name: Публикация
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Деплой на Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
