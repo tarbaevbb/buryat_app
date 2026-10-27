@@ -148,194 +148,45 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+    env:
+      PGPASSWORD: postgres
+      PGHOST: localhost
+      PGUSER: postgres
+      PGDATABASE: buryat_test
     steps:
       - uses: actions/checkout@v7
 
-      # Схема ссылается на auth.users и auth.uid() из Supabase.
-      # В чистом Postgres их нет, поэтому создаём минимальные заглушки —
-      # так проверяется именно наш SQL, без поднятия всего Supabase.
-      - name: Заглушки схемы auth
-        env:
-          PGPASSWORD: postgres
-        run: |
-          psql -h localhost -U postgres -d buryat_test -v ON_ERROR_STOP=1 <<'SQL'
-          create schema if not exists auth;
+      # Заглушки объектов Supabase (auth.users, auth.uid(), роли и права
+      # по умолчанию) — те же, что использует локальный
+      # `npm run check:migrations`. Отдельные файлы, чтобы CI и локальный
+      # запуск проверяли ровно одно и то же.
+      - name: Заглушки Supabase
+        run: psql -v ON_ERROR_STOP=1 -q -f scripts/sql/00-stubs.sql
 
-          -- Роли, от имени которых Supabase выдаёт права (anon, authenticated)
-          -- и служебные роли (service_role). В чистом Postgres их нет,
-          -- поэтому создаём — иначе GRANT в миграции упадёт.
-          do $$
-          declare r text;
-          begin
-            foreach r in array array['anon', 'authenticated', 'service_role'] loop
-              if not exists (select 1 from pg_roles where rolname = r) then
-                execute format('create role %I', r);
-              end if;
-            end loop;
-          end $$;
-
-          -- auth.users: схема ссылается на неё внешним ключом.
-          create table if not exists auth.users (
-            id uuid primary key default gen_random_uuid(),
-            email text unique
-          );
-
-          -- auth.uid(): возвращает id текущего пользователя из настроек сессии.
-          create or replace function auth.uid()
-          returns uuid language sql stable as $$
-            select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
-          $$;
-          SQL
-
-      - name: Первый прогон миграции
-        env:
-          PGPASSWORD: postgres
+      - name: Первый прогон миграций
         run: |
           for f in supabase/migrations/*.sql; do
             echo "→ применяю $f"
-            psql -h localhost -U postgres -d buryat_test -v ON_ERROR_STOP=1 -f "$f"
+            psql -v ON_ERROR_STOP=1 -q -f "$f"
           done
 
-      - name: Повторный прогон (проверка идемпотентности)
-        env:
-          PGPASSWORD: postgres
+      - name: Повторный прогон (идемпотентность)
         run: |
           for f in supabase/migrations/*.sql; do
             echo "→ повторяю $f"
-            psql -h localhost -U postgres -d buryat_test -v ON_ERROR_STOP=1 -f "$f"
+            psql -v ON_ERROR_STOP=1 -q -f "$f"
           done
 
-      - name: Проверка объектов и RLS
-        env:
-          PGPASSWORD: postgres
-        run: |
-          psql -h localhost -U postgres -d buryat_test -v ON_ERROR_STOP=1 <<'SQL'
-          -- Все таблицы должны существовать.
-          do $$
-          declare t text;
-          begin
-            foreach t in array array['profiles','user_progress','daily_xp','word_errors'] loop
-              if not exists (
-                select 1 from pg_tables where schemaname='public' and tablename=t
-              ) then
-                raise exception 'нет таблицы %', t;
-              end if;
-            end loop;
-          end $$;
+      - name: Схема, RLS и права
+        run: psql -v ON_ERROR_STOP=1 -q -f scripts/sql/10-schema.sql
 
-          -- На каждой таблице должен быть включён RLS.
-          do $$
-          declare t text;
-          begin
-            foreach t in array array['profiles','user_progress','daily_xp','word_errors'] loop
-              if not exists (
-                select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace
-                where n.nspname='public' and c.relname=t and c.relrowsecurity
-              ) then
-                raise exception 'RLS выключен на %', t;
-              end if;
-            end loop;
-          end $$;
-
-          -- Все RPC, которые вызывает клиент, должны существовать.
-          do $$
-          declare f text;
-          begin
-            foreach f in array array[
-              'fn_leaderboard_week','fn_award_lesson','fn_award_review',
-              'fn_fetch_progress','fn_push_progress','fn_reset_progress','fn_hearts_now'
-            ] loop
-              if not exists (
-                select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-                where n.nspname='public' and p.proname=f
-              ) then
-                raise exception 'нет функции %', f;
-              end if;
-            end loop;
-          end $$;
-
-          select 'проверки схемы пройдены' as result;
-          SQL
-
-      # Функциональная проверка: награда, слияние прогресса, сброс.
       - name: Поведение RPC
-        env:
-          PGPASSWORD: postgres
-        run: |
-          psql -h localhost -U postgres -d buryat_test -v ON_ERROR_STOP=1 <<'SQL'
-          -- Создаём игрока и «логинимся» от его имени.
-          insert into auth.users (id, email)
-          values ('11111111-1111-1111-1111-111111111111', 'test@buryat.local');
+        run: psql -v ON_ERROR_STOP=1 -q -f scripts/sql/20-behaviour.sql
 
-          insert into public.profiles (id, tg_id, first_name)
-          values ('11111111-1111-1111-1111-111111111111', 42, 'Тест');
-
-          set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
-
-          -- Награда за урок: XP должен начислиться, серия стать 1.
-          do $$
-          declare r record;
-          begin
-            select * into r from public.fn_award_lesson('u1l1', 100, 100);
-            if r.xp <> 20 or r.streak <> 1 then
-              raise exception 'неожиданная награда за урок: xp=% streak=%', r.xp, r.streak;
-            end if;
-          end $$;
-
-          -- Повторная отправка того же снимка не должна удваивать XP.
-          do $$
-          declare before_xp int; after_xp int;
-          begin
-            select xp into before_xp from public.profiles
-            where id = '11111111-1111-1111-1111-111111111111';
-
-            perform public.fn_push_progress(jsonb_build_object(
-              'xp', before_xp,
-              'lessons', jsonb_build_array(jsonb_build_object(
-                'lessonId','u1l1','score',100,'accuracy',100,'xp',20)),
-              'wordStats', '{}'::jsonb,
-              'dailyXp', '{}'::jsonb
-            ));
-
-            select xp into after_xp from public.profiles
-            where id = '11111111-1111-1111-1111-111111111111';
-
-            if after_xp <> before_xp then
-              raise exception 'повторная отправка изменила XP: % → %', before_xp, after_xp;
-            end if;
-          end $$;
-
-          -- Награда за повторение: формула min(20, 2 + верных + 3 за идеал).
-          do $$
-          declare r record;
-          begin
-            select * into r from public.fn_award_review(10, 10, '{}'::jsonb);
-            if r.xp <> 15 then
-              raise exception 'неожиданная награда за повторение: xp=%', r.xp;
-            end if;
-          end $$;
-
-          -- Сброс: XP, гемы и серия должны обнулиться, уроки удалиться.
-          do $$
-          declare p record;
-          begin
-            perform public.fn_reset_progress();
-
-            select * into p from public.profiles
-            where id = '11111111-1111-1111-1111-111111111111';
-
-            if p.xp <> 0 or p.gems <> 20 or p.streak <> 0 then
-              raise exception 'сброс неполный: xp=% gems=% streak=%', p.xp, p.gems, p.streak;
-            end if;
-
-            if exists (select 1 from public.user_progress
-                       where user_id = '11111111-1111-1111-1111-111111111111') then
-              raise exception 'после сброса остались записи об уроках';
-            end if;
-          end $$;
-
-          select 'проверки поведения RPC пройдены' as result;
-          SQL
+      # Проверки защиты: каждая попытка ниже раньше завершалась успешно
+      # и позволяла накрутить прогресс или испортить данные другому игроку.
+      - name: Защита от накрутки
+        run: psql -v ON_ERROR_STOP=1 -q -f scripts/sql/30-security.sql
 
   # -------------------------------------------------------------------
   # Итоговый job: один обязательный статус для branch protection.

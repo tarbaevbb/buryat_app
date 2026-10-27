@@ -142,23 +142,24 @@ export async function resetRemoteProgress(): Promise<boolean> {
 
 /**
  * `lessons` — объект на клиенте, массив на сервере: RPC перебирает
- * jsonb_array_elements. Остальное передаётся как есть.
+ * jsonb_array_elements.
+ *
+ * Отправляем только то, что сервер действительно обрабатывает:
+ * сердца, факты прохождения уроков и статистику слов. XP, гемы, серию
+ * и `dailyXp` сервер считает сам — если их прислать, они будут
+ * проигнорированы (проверено тестами в scripts/check-migrations.sh).
+ * Без этого достаточно было бы прислать `{"xp": 50000000}` и накрутить
+ * себе опыт.
  */
 function serializeSnapshot(snapshot: ProgressSnapshot) {
   return {
-    xp: snapshot.xp,
-    gems: snapshot.gems,
     hearts: snapshot.hearts,
     heartsUpdatedAt: snapshot.heartsUpdatedAt,
-    streak: snapshot.streak,
-    lastActiveDay: snapshot.lastActiveDay,
     lessons: Object.values(snapshot.lessons).map((l) => ({
       lessonId: l.lessonId,
       score: l.score,
       accuracy: l.accuracy,
-      xp: l.xp,
     })),
-    dailyXp: snapshot.dailyXp,
     wordStats: snapshot.wordStats,
   }
 }

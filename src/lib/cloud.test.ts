@@ -151,9 +151,37 @@ describe('cloud: снимок прогресса', () => {
     const args = calls[0].args.payload as Record<string, unknown>
     expect(Array.isArray(args.lessons)).toBe(true)
     expect((args.lessons as unknown[])[0]).toMatchObject({ lessonId: 'u1l1', score: 80 })
-    // completedAt на сервере не нужен — не должен уходить.
+    // completedAt и xp на сервере не нужны — награду считает он сам.
     expect((args.lessons as Record<string, unknown>[])[0]).not.toHaveProperty('completedAt')
-    expect(args.xp).toBe(42)
+    expect((args.lessons as Record<string, unknown>[])[0]).not.toHaveProperty('xp')
+  })
+
+  /**
+   * Ключевая проверка безопасности: клиент не должен отправлять XP, гемы,
+   * серию и dailyXp. Раньше они уходили в payload, и сервер их принимал —
+   * достаточно было подменить значение, чтобы накрутить себе прогресс.
+   */
+  it('не отправляет XP, гемы, серию и dailyXp', async () => {
+    handler = () => ({ data: remotePayload, error: null })
+    const snapshot = {
+      ...emptySnapshot(),
+      xp: 50000000,
+      gems: 999999,
+      streak: 9999,
+      lastActiveDay: '2026-01-01',
+      dailyXp: { '2026-01-01': 50000000 },
+    }
+    await cloud.pushProgress(snapshot)
+
+    const payload = calls[0].args.payload as Record<string, unknown>
+    expect(payload).not.toHaveProperty('xp')
+    expect(payload).not.toHaveProperty('gems')
+    expect(payload).not.toHaveProperty('streak')
+    expect(payload).not.toHaveProperty('lastActiveDay')
+    expect(payload).not.toHaveProperty('dailyXp')
+    // А сердца и статистика слов — отправляются: их ведёт клиент.
+    expect(payload).toHaveProperty('hearts')
+    expect(payload).toHaveProperty('wordStats')
   })
 
   it('не падает на мусорных числах', async () => {

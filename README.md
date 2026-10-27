@@ -35,16 +35,18 @@ npm run verify  # всё, что проверяет CI: линтер, типы, 
 
 В браузере Telegram SDK подменяется заглушкой (`src/telegram/mock.ts`),
 поэтому можно спокойно верстать и тестировать без открытия Telegram.
+Без облака прогресс хранится в `localStorage`; чтобы проверить
+синхронизацию локально, создайте `.env` из `.env.example`.
 
 Отдельные команды:
 
 ```bash
 npm run lint             # ESLint: react-hooks и доступность (a11y)
 npm run typecheck        # проверка типов без сборки
-npm test                 # 172 теста: логика, курс, синхронизация, рендеринг
+npm test                 # 173 теста: логика, курс, синхронизация, рендеринг
 npm run build            # сборка в dist/
 npm run size             # контроль размера бандла
-npm run check:migrations # миграции на локальном Postgres (нужен Docker)
+npm run check:migrations # миграции и защита от накрутки на Postgres (Docker)
 npm run preview          # локальный просмотр сборки
 ```
 
@@ -52,15 +54,41 @@ npm run preview          # локальный просмотр сборки
 
 | Workflow | Когда запускается | Что проверяет |
 |---|---|---|
-| `ci.yml` | push в `main`, PR, вручную | линтер, типы, 172 теста, сборка, размер бандла, Deno-проверка функции, миграции на Postgres |
+| `ci.yml` | push в `main`, PR, вручную | валидация workflow, линтер, типы, 173 теста, сборка, размер бандла, Deno-проверка функции, миграции, защита от накрутки |
 | `secrets.yml` | push, PR | утечки секретов (gitleaks + проверки токенов Telegram и ключей Supabase) |
 | `codeql.yml` | push в `main`, PR, по расписанию | статический анализ безопасности |
 | `deploy.yml` | push в `main` | публикация на GitHub Pages |
 | `deploy-supabase.yml` | push в `main` (при изменении `supabase/**`) | миграции и Edge Function в облако |
 
-`ci.yml` разбит на независимые job'ы (`lint`, `test`, `build`, `deno`,
-`migrations`) — они идут параллельно, а `ci-ok` собирает единый статус для
-branch protection.
+`ci.yml` разбит на независимые job'ы (`workflows`, `lint`, `test`, `build`,
+`deno`, `migrations`) — они идут параллельно, а `ci-ok` собирает единый
+статус для branch protection.
+
+### Безопасность серверной логики
+
+Прогресс считается на сервере, поэтому схема защищена от накрутки.
+Миграция `20261027220000_harden_rpc.sql` закрывает семь способов обойти
+награды. Каждый был воспроизведён на реальном Postgres, и на каждый есть
+проверка в `scripts/sql/30-security.sql`, которая блокирует деплой:
+
+| Что было | Как закрыто |
+|---|---|
+| `fn_register_activity` принимала произвольный `uid` — можно было обнулить серию другому игроку | отозван EXECUTE у всех ролей приложения, внутри сверка с `auth.uid()` |
+| Роли `anon` (ключ лежит в бандле) были доступны все RPC | `revoke` с `PUBLIC`/`anon`, выданы только шесть нужных функций для `authenticated` |
+| `authenticated` могла править свой `xp`, `gems`, `streak` напрямую | права на таблицы отозваны: клиент ходит только через RPC |
+| Вставка любого XP в `daily_xp` накручивала лидерборд | то же — прямой доступ к таблице закрыт |
+| `fn_push_progress` принимала XP из payload (`{"xp": 50000000}`) | XP, гемы, серия и `dailyXp` из payload игнорируются |
+| `fn_award_lesson` начисляла награду за выдуманный `lesson_id` | каталог уроков в таблице `lessons`, награда только за существующий урок |
+| View `leaderboard_week` читалась ролью `anon` — имена игроков без авторизации | доступ к view отозван, данные отдаёт только RPC |
+
+Каталог уроков синхронизируется из `course.ts`:
+
+```bash
+node scripts/sync-lessons.mjs --write   # обновить список в миграции
+```
+
+Скрипт проверяет, что уроков 25, повторений — по одному на раздел,
+и что id не дублируются.
 
 ## Деплой
 
@@ -99,56 +127,95 @@ VITE_SUPABASE_ANON_KEY
 ## Подключение Supabase (облако)
 
 Приложение работает и без сервера. Чтобы включить аккаунты, синхронизацию
-и общий рейтинг:
+и общий рейтинг, нужен проект Supabase (бесплатного тарифа достаточно).
 
-1. Создайте проект на [supabase.com](https://supabase.com).
-2. Примените миграции и задеплойте функцию (одна команда после `link`):
+### Пошагово для продакшена
 
-   ```bash
-   supabase login
-   supabase link --project-ref <your-ref>
-   supabase db push --linked
-   supabase secrets set TELEGRAM_BOT_TOKEN=123456:AA...
-   supabase functions deploy telegram-auth --no-verify-jwt
-   ```
+**1. Создайте проект.** [supabase.com/dashboard](https://supabase.com/dashboard)
+→ **New project**. Запишите пароль базы — он понадобится для деплоя миграций.
 
-   (`SUPABASE_URL` и `SUPABASE_SERVICE_ROLE_KEY` подставляются автоматически.)
+Из **Settings → API** скопируйте:
+- `Project URL` — вида `https://abcdefgh.supabase.co`
+- `anon public` — длинный ключ, начинается с `eyJ`
 
-   Альтернатива без CLI: вставьте содержимое
-   `supabase/migrations/*.sql` в **SQL Editor** и выполните.
+Часть `abcdefgh` в URL — это **project ref**.
 
-3. Создайте `.env` из `.env.example`:
+**2. Добавьте секреты в GitHub** (Settings → Secrets and variables → Actions):
 
-   ```bash
-   cp .env.example .env
-   ```
+| Секрет | Значение | Зачем |
+|---|---|---|
+| `SUPABASE_ACCESS_TOKEN` | [Account → Access Tokens](https://supabase.com/dashboard/account/tokens) | деплой миграций и функции |
+| `SUPABASE_PROJECT_ID` | project ref из URL | к какому проекту подключаться |
+| `SUPABASE_DB_PASSWORD` | пароль базы из шага 1 | применение миграций |
+| `VITE_SUPABASE_URL` | Project URL | попадает в сборку фронтенда |
+| `VITE_SUPABASE_ANON_KEY` | anon public | попадает в сборку фронтенда |
 
-   ```
-   VITE_SUPABASE_URL=https://<ref>.supabase.co
-   VITE_SUPABASE_ANON_KEY=<anon key>
-   ```
+**3. Добавьте секрет в Supabase** — токен бота от [@BotFather](https://t.me/BotFather):
 
-4. Перезапустите dev-сервер / пересоберите фронтенд.
+```bash
+brew install supabase/tap/supabase
+supabase login
+supabase link --project-ref <ваш-ref>
+supabase secrets set TELEGRAM_BOT_TOKEN=123456789:AA...
+```
 
-Как это работает:
+Токен бота **никогда** не попадает во фронтенд: он живёт только в секретах
+Edge Function, клиент его не видит.
+
+**4. Задеплойте** — запушьте в `main`. Workflow `deploy-supabase.yml`
+применит миграции и опубликует функцию, а `deploy.yml` пересоберёт
+фронтенд с ключами. Либо вручную:
+
+```bash
+supabase db push --linked
+supabase functions deploy telegram-auth --no-verify-jwt
+```
+
+`--no-verify-jwt` обязателен: функция вызывается до авторизации в Supabase,
+она сама проверяет подпись `initData`.
+
+**5. Проверьте.** Откройте приложение в Telegram — в профиле должен
+появиться бейдж **«Облако»** вместо «Локально».
+
+### Если что-то не работает
+
+| Симптом | Причина и решение |
+|---|---|
+| Бейдж «Локально» | Секреты `VITE_SUPABASE_*` не заданы, либо приложение открыто в браузере, а не в Telegram (`initData` пустой) |
+| Ошибка `invalid_init_data` | `auth_date` старше 24 ч → перезапустите приложение. Либо неверный `TELEGRAM_BOT_TOKEN` |
+| Ошибка `server_not_configured` | В Supabase не задан `TELEGRAM_BOT_TOKEN` |
+| `unknown lesson` при прохождении урока | Каталог уроков устарел: `node scripts/sync-lessons.mjs --write`, затем задеплойте миграции |
+| `permission denied for function` | Миграция защиты не применена — выполните `supabase db push --linked` |
+
+Логи функции:
+
+```bash
+supabase functions logs telegram-auth
+```
+
+### Как это работает
 
 - клиент отправляет `Telegram.WebApp.initData` в Edge Function `telegram-auth`;
 - функция проверяет подпись по HMAC-SHA256 и срок `auth_date` (≤ 24 ч),
   создаёт/находит пользователя и возвращает сессию Supabase;
-- синхронизация идёт через `fn_fetch_progress` / `fn_push_progress`: полный
-  снимок прогресса с устройства сливается с облачным по правилам «максимума»
-  (идемпотентно — накрутить или потерять прогресс нельзя);
+- синхронизация идёт через `fn_fetch_progress` / `fn_push_progress`: снимок
+  прогресса с устройства сливается с облачным по правилам «максимума»;
 - за урок награду считает БД в `fn_award_lesson`, за повторение — в
   `fn_award_review`;
 - рейтинг отдаётся через `fn_leaderboard_week`;
 - сброс прогресса чистит и облако (`fn_reset_progress`); если сети не было,
   обнуление произойдёт при первой успешной синхронизации.
 
-Синхронизируются XP, гемы, сердца, серия, результаты уроков, XP по дням и
-статистика слов. Работа без сети не теряет данные: изменения копятся локально
-и уходят при возврате в приложение, появлении сети или раз в минуту.
+Синхронизируются XP, гемы, сердца, серия и результаты уроков. Работа без
+сети не теряет данные: изменения копятся локально и уходят при возврате
+в приложение, появлении сети или раз в минуту. Уроки, пройденные офлайн,
+начисляют XP на сервере по серверной формуле — клиент присылает только
+факт прохождения (`lesson_id`, `score`, `accuracy`), но не награду.
 
-Токен бота **никогда** не попадает во фронтенд — только в секреты функции.
+### Что защищено от накрутки
+
+XP и гемы считает только сервер, клиент не может их подменить. Подробности
+и список закрытых уязвимостей — в разделе «Безопасность серверной логики».
 
 ### Автодеплой облака из CI
 
@@ -190,11 +257,13 @@ src/
   lib/             нормализация ответов, SRS, даты, Supabase, облако
 supabase/
   config.toml               настройки проекта и Edge Functions
-  migrations/               SQL-миграции (таблицы, RLS, RPC)
+  migrations/               SQL-миграции (таблицы, RLS, RPC, защита)
   functions/telegram-auth/  проверка initData и выдача сессии
 scripts/
   check-bundle-size.mjs     контроль размера сборки
-  check-migrations.sh       проверка миграций на локальном Postgres
+  check-migrations.sh       миграции и безопасность на Postgres
+  sync-lessons.mjs          каталог уроков для сервера из course.ts
+  sql/                      SQL-проверки (используются и в CI)
 docs/
   content-review.md         чек-лист для проверки бурятского носителем
   architecture.md           как всё устроено внутри
