@@ -1,0 +1,23 @@
+### Зависимости и сборка ###
+node_modules/
+dist/
+*.local
+
+### Окружение (ключи Supabase) ###
+.env
+.env.*
+!.env.example
+
+### TypeScript ###
+*.tsbuildinfo
+
+### IntelliJ IDEA ###
+out/
+.idea/
+.kotlin
+
+### VS Code ###
+.vscode/
+
+### macOS ###
+.DS_Store
