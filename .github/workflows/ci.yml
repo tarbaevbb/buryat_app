@@ -17,6 +17,23 @@ permissions:
 
 jobs:
   # -------------------------------------------------------------------
+  # Валидация самих workflow. GitHub отклоняет некорректный файл молча:
+  # запуск падает без job'ов и без логов, причину искать долго.
+  # actionlint ловит такие ошибки (например, недоступный контекст
+  # `secrets` в `environment.url`).
+  # -------------------------------------------------------------------
+  workflows:
+    name: Валидация workflow
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: actionlint
+        uses: docker://rhysd/actionlint:latest
+        with:
+          args: -color
+
+  # -------------------------------------------------------------------
   # Линтер: ошибки стиля и потенциальные баги (react-hooks, a11y).
   # Идёт первым — он самый быстрый и даёт обратную связь раньше остальных.
   # -------------------------------------------------------------------
@@ -326,12 +343,13 @@ jobs:
   ci-ok:
     name: CI пройден
     if: always()
-    needs: [lint, test, build, deno, migrations]
+    needs: [workflows, lint, test, build, deno, migrations]
     runs-on: ubuntu-latest
     steps:
       - name: Проверить результаты всех job
         run: |
           results=(
+            "workflows=${{ needs.workflows.result }}"
             "lint=${{ needs.lint.result }}"
             "test=${{ needs.test.result }}"
             "build=${{ needs.build.result }}"
