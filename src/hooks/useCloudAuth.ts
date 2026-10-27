@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { isCloudEnabled, signInWithTelegram, supabase, type CloudUser } from '../lib/supabase'
+import {
+  isCloudEnabled,
+  signInWithTelegram,
+  signOut,
+  supabase,
+  type CloudUser,
+} from '../lib/supabase'
 import { fetchRemoteProgress, pushProgress, resetRemoteProgress } from '../lib/cloud'
 import {
   fullSignature,
@@ -43,6 +49,40 @@ function subscribe(listener: () => void): () => void {
   return () => listeners.delete(listener)
 }
 
+/**
+ * Определяет, совпадает ли сохранённая сессия с текущим Telegram-аккаунтом.
+ *
+ * Зачем: сессия лежит в localStorage и общая для всех аккаунтов Telegram
+ * на устройстве (в Desktop и Web они делят хранилище домена). Без сверки
+ * пользователь B видел бы имя и прогресс пользователя A. Проблема решается
+ * выходом из сессии и очисткой локального прогресса — но только
+ * локального, чтобы не задеть облако владельца.
+ *
+ * Возвращает:
+ *   'ok'          — сессия принадлежит текущему пользователю;
+ *   'mismatch'    — сессия от другого аккаунта, нужен повторный вход;
+ *   'unknown'     — сверить не с чем (в браузере нет initData), доверяем сессии.
+ */
+export function checkSessionOwner(
+  sessionTgId: number | null | undefined,
+  currentTgId: number | null | undefined,
+): 'ok' | 'mismatch' | 'unknown' {
+  // Вне Telegram initData пустой — работаем как в обычном браузере.
+  if (!currentTgId) return 'unknown'
+  // В сессии нет tg_id: старые записи или иной способ входа.
+  if (!sessionTgId) return 'mismatch'
+  return sessionTgId === currentTgId ? 'ok' : 'mismatch'
+}
+
+/**
+ * Убирает данные предыдущего пользователя на этом устройстве.
+ * Облако не трогаем: `clearLocal` не ставит флаг сброса.
+ */
+async function dropForeignSession(): Promise<void> {
+  useProgress.getState().clearLocal()
+  await signOut()
+}
+
 /** Сливает локальный прогресс с облачным и фиксирует результат. */
 async function reconcile(): Promise<boolean> {
   // Если ранее был сброс, который облако не подтвердило, — сначала обнуляем сервер,
@@ -81,26 +121,39 @@ async function connect(): Promise<void> {
   inFlight = (async () => {
     setSnapshot({ status: 'connecting' })
 
-    // Имя из Telegram сохраняем локально в любом случае.
     const tg = tgUser()
-    const progress = useProgress.getState()
-    if (tg?.first_name && !progress.displayName) progress.setDisplayName(tg.first_name)
+    const currentTgId = tg?.id ?? null
 
     const { data } = (await supabase!.auth.getSession()) ?? { data: { session: null } }
+
     if (data.session) {
       const meta = data.session.user.user_metadata ?? {}
-      setSnapshot({
-        user: {
-          id: data.session.user.id,
-          tgId: Number(meta.tg_id ?? 0),
-          firstName: (meta.first_name as string) ?? null,
-          username: (meta.username as string) ?? null,
-          photoUrl: null,
-        },
-      })
-      setSnapshot({ status: (await reconcile()) ? 'online' : 'offline' })
-      return
+      const sessionTgId = meta.tg_id ? Number(meta.tg_id) : null
+
+      // Сессия в localStorage общая для всех аккаунтов Telegram на
+      // устройстве. Если она принадлежит другому пользователю, её данные
+      // показывать нельзя: выходим и входим заново под текущим аккаунтом.
+      if (checkSessionOwner(sessionTgId, currentTgId) === 'mismatch') {
+        await dropForeignSession()
+      } else {
+        setSnapshot({
+          user: {
+            id: data.session.user.id,
+            tgId: sessionTgId ?? 0,
+            firstName: (meta.first_name as string) ?? null,
+            username: (meta.username as string) ?? null,
+            photoUrl: null,
+          },
+        })
+        setSnapshot({ status: (await reconcile()) ? 'online' : 'offline' })
+        return
+      }
     }
+
+    // Имя из Telegram пишем локально только когда точно знаем, что прогресс
+    // на устройстве принадлежит этому же пользователю (см. выше) либо пуст.
+    const progress = useProgress.getState()
+    if (tg?.first_name && !progress.displayName) progress.setDisplayName(tg.first_name)
 
     const raw = initDataRaw()
     if (!raw) {

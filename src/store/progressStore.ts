@@ -51,6 +51,14 @@ export interface ProgressState extends ProgressSnapshot {
   markSynced: (signature: string) => void
   /** Сброс: чистит прогресс и помечает, что облако нужно обнулить. */
   reset: () => void
+  /**
+   * Очистка локальных данных без пометки сброса.
+   *
+   * Нужна при смене Telegram-аккаунта на общем устройстве: прогресс
+   * предыдущего пользователя надо убрать, но его облако трогать нельзя —
+   * `reset()` поставил бы `resetPending` и обнулил чужой аккаунт.
+   */
+  clearLocal: () => void
   markResetSynced: () => void
 }
 
@@ -220,6 +228,8 @@ export const useProgress = create<ProgressState>()(
 
       reset: () => set({ ...emptyPersisted(), resetPending: true }),
 
+      clearLocal: () => set({ ...emptyPersisted(), resetPending: false }),
+
       markResetSynced: () => set({ resetPending: false }),
     }),
     {
@@ -238,6 +248,7 @@ export const useProgress = create<ProgressState>()(
           setDisplayName: _sd,
           applySnapshot: _as,
           markSynced: _ms,
+          clearLocal: _cl,
           markResetSynced: _mrs,
           reset: _rs,
           ...rest

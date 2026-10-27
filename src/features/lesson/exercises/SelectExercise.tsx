@@ -4,7 +4,7 @@ import { Volume2 } from 'lucide-react'
 import type { SelectExercise } from '../../../data/types'
 import { isCorrect } from '../../../lib/normalize'
 import { OptionCard } from '../../../components/Button'
-import { haptic } from '../../../telegram/init'
+import { feedback, primeFeedback } from '../../../lib/feedback'
 
 interface Props {
   exercise: SelectExercise
@@ -30,13 +30,17 @@ export function SelectExerciseView({ exercise, checked, onWrong, onCorrect }: Pr
   const pick = (option: string) => {
     if (checked || wrongPicks.includes(option)) return
 
+    // Разблокируем аудио внутри жеста: иначе браузер может «проглотить»
+    // первый сигнал, и звук появится только со второго нажатия.
+    primeFeedback()
+
     if (isCorrect(option, exercise.answer)) {
-      haptic('success')
+      feedback('correct')
       onCorrect()
       return
     }
 
-    haptic('error')
+    feedback('wrong')
     setWrongPicks((prev) => [...prev, option])
     setShaking({ option, key: Date.now() })
     onWrong()

@@ -61,7 +61,43 @@ export function createMockWebApp(): TgWebApp {
       window.open(url, '_blank', 'noopener')
     },
     disableVerticalSwipes() {},
+    enableVerticalSwipes() {},
+    enableClosingConfirmation() {},
+    disableClosingConfirmation() {},
     requestFullscreen() {},
+
+    /**
+     * Вибрация в браузере.
+     *
+     * В Telegram HapticFeedback — нативный API, в браузере его нет.
+     * Поэтому переводим типы на `navigator.vibrate`: это работает
+     * в Chrome на Android. В iOS Safari вибрации для веба нет
+     * (системное ограничение) — там вызов просто безвреден.
+     *
+     * Длительности подобраны так, чтобы характер отклика совпадал
+     * с Telegram: короткий тик, двойной тик, длинный «звон».
+     */
+    HapticFeedback: {
+      impactOccurred(style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft' = 'light') {
+        const ms = { light: 10, medium: 20, heavy: 35, rigid: 25, soft: 12 }[style] ?? 10
+        navigator.vibrate?.(ms)
+      },
+      notificationOccurred(type: 'error' | 'success' | 'warning') {
+        // Успех — короткий двойной тик, ошибка — резкие три удара,
+        // предупреждение — один средний.
+        const pattern =
+          type === 'success'
+            ? [18, 50, 18]
+            : type === 'error'
+              ? [40, 60, 40, 60, 40]
+              : [30]
+        navigator.vibrate?.(pattern)
+      },
+      selectionChanged() {
+        navigator.vibrate?.(8)
+      },
+    },
+
     onEvent(event: string, handler: () => void) {
       if (event === 'themeChanged') {
         window

@@ -43,7 +43,7 @@ npm run verify  # всё, что проверяет CI: линтер, типы, 
 ```bash
 npm run lint             # ESLint: react-hooks и доступность (a11y)
 npm run typecheck        # проверка типов без сборки
-npm test                 # 173 теста: логика, курс, синхронизация, рендеринг
+npm test                 # 199 тестов: логика, курс, отклик, рендеринг
 npm run build            # сборка в dist/
 npm run size             # контроль размера бандла
 npm run check:migrations # миграции и защита от накрутки на Postgres (Docker)

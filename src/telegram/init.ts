@@ -22,6 +22,14 @@ export function tg(): TgWebApp {
   return cached
 }
 
+/**
+ * Базовая инициализация. Вызывается один раз при старте.
+ *
+ * Блокировку свайпов и подтверждение закрытия здесь НЕ включаем: они
+ * нужны только внутри урока (чтобы случайный свайп не сбросил прогресс),
+ * а в остальных экранах мешают — приложение нельзя свернуть.
+ * Управление ими — через `lockSwipes()` / `unlockSwipes()`.
+ */
 export function initTelegram(): void {
   const app = tg()
   applyTheme(app)
@@ -29,8 +37,23 @@ export function initTelegram(): void {
   subscribeTheme(app)
   safe(() => app.ready())
   safe(() => app.expand())
+}
+
+/**
+ * Запрещает вертикальные свайпы и включает подтверждение закрытия.
+ * Используется на экране урока.
+ */
+export function lockSwipes(): void {
+  const app = tg()
   safe(() => app.disableVerticalSwipes?.())
   safe(() => app.enableClosingConfirmation?.())
+}
+
+/** Возвращает обычное поведение: приложение можно листать и свернуть. */
+export function unlockSwipes(): void {
+  const app = tg()
+  safe(() => app.enableVerticalSwipes?.())
+  safe(() => app.disableClosingConfirmation?.())
 }
 
 export function startParam(): string | undefined {
@@ -55,6 +78,13 @@ function safe(fn: () => void): void {
   }
 }
 
+/**
+ * Вибрация через нативный API Telegram.
+ *
+ * Настройку «Вибрация» здесь не проверяем: решение принимает `feedback`
+ * в src/lib/feedback.ts, чтобы логика была в одном месте. Вызов напрямую
+ * нужен только для случаев, когда вибрация обязана быть (сейчас таких нет).
+ */
 export function haptic(
   type: 'light' | 'medium' | 'heavy' | 'success' | 'error' | 'warning' | 'select',
 ): void {

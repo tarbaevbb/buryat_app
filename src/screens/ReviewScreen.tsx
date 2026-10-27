@@ -6,7 +6,7 @@ import { useProgress } from '../store/progressStore'
 import { pickReviewWords } from '../lib/srs'
 import { isCorrect } from '../lib/normalize'
 import { reviewXp } from '../lib/progress'
-import { haptic } from '../telegram/init'
+import { feedback, primeFeedback } from '../lib/feedback'
 import { course } from '../data/course'
 import { makeRng, shuffle } from '../lib/rng'
 import { useAwardReview } from '../hooks/useAwardLesson'
@@ -53,9 +53,10 @@ export function ReviewScreen() {
 
   const pick = (option: string) => {
     if (!current || wrongPicks.includes(option)) return
+    primeFeedback()
 
     if (isCorrect(option, current.ru)) {
-      haptic('success')
+      feedback('correct')
       recordWord(current.id, true)
       setSolved((n) => n + 1)
       if (firstTryRef.current) setFirstTry((n) => n + 1)
@@ -65,7 +66,7 @@ export function ReviewScreen() {
       return
     }
 
-    haptic('error')
+    feedback('wrong')
     recordWord(current.id, false)
     firstTryRef.current = false
     setWrongPicks((p) => [...p, option])

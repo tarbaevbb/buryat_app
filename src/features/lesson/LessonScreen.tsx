@@ -5,7 +5,8 @@ import { generateExercises, exerciseVocabIds } from '../../data/exercises'
 import { getLesson } from '../../data/course'
 import { GEMS_PER_REFILL, useProgress } from '../../store/progressStore'
 import { sessionSummary, useSession } from '../../store/sessionStore'
-import { haptic, isTelegram } from '../../telegram/init'
+import { feedback, primeFeedback } from '../../lib/feedback'
+import { isTelegram, lockSwipes, unlockSwipes } from '../../telegram/init'
 import { useBackButton, useMainButton } from '../../telegram/hooks'
 import { Hearts } from '../../components/Hearts'
 import { useAwardLesson } from '../../hooks/useAwardLesson'
@@ -54,6 +55,14 @@ export function LessonScreen({ lessonId, onExit }: Props) {
     return () => clear()
   }, [lessonId, exercises, start, clear])
 
+  // Пока идёт урок, запрещаем вертикальные свайпы и просим подтверждение
+  // при закрытии: случайный свайп не должен сбрасывать прогресс.
+  // На остальных экранах приложение остаётся «листаемым» — там это мешает.
+  useEffect(() => {
+    lockSwipes()
+    return () => unlockSwipes()
+  }, [])
+
   useEffect(() => {
     hadWrongRef.current = false
   }, [session.index])
@@ -71,7 +80,7 @@ export function LessonScreen({ lessonId, onExit }: Props) {
     loseHeart()
     hadWrongRef.current = true
     if (heartsNow() <= 0) {
-      haptic('error')
+      feedback('heartLost')
       setOutOfHearts(true)
     }
     if (current) exerciseVocabIds(current).forEach((id) => recordWord(id, false))
@@ -95,12 +104,17 @@ export function LessonScreen({ lessonId, onExit }: Props) {
   }, [lesson, lessonId, summary, awardLesson])
 
   // Награда начисляется ровно один раз при завершении урока.
+  // Звук победы проигрываем здесь же: он должен совпасть с экраном результата.
   useEffect(() => {
-    if (session.phase === 'done' && session.exercises.length > 0) finish()
+    if (session.phase === 'done' && session.exercises.length > 0) {
+      feedback('complete')
+      finish()
+    }
   }, [session.phase, session.exercises.length, finish])
 
   const mainAction = useCallback(() => {
-    haptic('light')
+    primeFeedback()
+    feedback('tap')
     if (finished) {
       onExit()
       return
@@ -117,7 +131,8 @@ export function LessonScreen({ lessonId, onExit }: Props) {
   })
 
   const backAction = useCallback(() => {
-    haptic('light')
+    primeFeedback()
+    feedback('tap')
     setConfirmedExit(true)
   }, [])
   useBackButton(true, backAction)
@@ -149,7 +164,7 @@ export function LessonScreen({ lessonId, onExit }: Props) {
             type="button"
             onClick={() => {
               if (refill()) {
-                haptic('success')
+                feedback('correct')
                 setOutOfHearts(false)
               }
             }}

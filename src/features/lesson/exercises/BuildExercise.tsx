@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { BuildExercise } from '../../../data/types'
 import { normalize } from '../../../lib/normalize'
-import { haptic } from '../../../telegram/init'
+import { feedback, primeFeedback } from '../../../lib/feedback'
 
 interface Props {
   exercise: BuildExercise
@@ -32,14 +32,16 @@ export function BuildExerciseView({ exercise, checked, onWrong, onCorrect }: Pro
 
   const takeTile = (tile: Tile) => {
     if (checked) return
-    haptic('select')
+    primeFeedback()
+    feedback('tap')
     setPool((p) => p.filter((t) => t.uid !== tile.uid))
     setLine((l) => [...l, tile])
   }
 
   const returnTile = (tile: Tile) => {
     if (checked) return
-    haptic('select')
+    primeFeedback()
+    feedback('tap')
     setLine((l) => l.filter((t) => t.uid !== tile.uid))
     setPool((p) => [...p, tile])
   }
@@ -47,10 +49,10 @@ export function BuildExerciseView({ exercise, checked, onWrong, onCorrect }: Pro
   const check = () => {
     const built = line.map((t) => t.word).join(' ')
     if (normalize(built) === normalize(exercise.answer)) {
-      haptic('success')
+      feedback('correct')
       onCorrect()
     } else {
-      haptic('error')
+      feedback('wrong')
       onWrong()
     }
   }

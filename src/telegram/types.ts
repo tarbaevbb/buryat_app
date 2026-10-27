@@ -55,6 +55,7 @@ export interface TgWebApp {
   enableClosingConfirmation?(): void
   disableClosingConfirmation?(): void
   disableVerticalSwipes?(): void
+  enableVerticalSwipes?(): void
   requestFullscreen?(): void
   openTelegramLink?(url: string): void
 

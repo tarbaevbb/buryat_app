@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { MatchExercise } from '../../../data/types'
 import { shuffle, makeRng, hashString } from '../../../lib/rng'
-import { haptic } from '../../../telegram/init'
+import { feedback, primeFeedback } from '../../../lib/feedback'
 
 interface Props {
   exercise: MatchExercise
@@ -71,6 +71,7 @@ export function MatchExerciseView({ exercise, checked, onWrong, onCorrect }: Pro
 
   const tap = (slot: Slot) => {
     if (checked || matched.includes(slot.pairIndex)) return
+    primeFeedback()
 
     // Первый выбор либо смена стороны — просто выделяем плитку.
     if (!selected || selected.side === slot.side) {
@@ -79,13 +80,13 @@ export function MatchExerciseView({ exercise, checked, onWrong, onCorrect }: Pro
         setSelected(null)
         return
       }
-      haptic('select')
+      feedback('tap')
       setSelected(slot)
       return
     }
 
     if (selected.pairIndex === slot.pairIndex) {
-      haptic('success')
+      feedback('correct')
       const next = [...matched, slot.pairIndex]
       setMatched(next)
       setSelected(null)
@@ -94,7 +95,7 @@ export function MatchExerciseView({ exercise, checked, onWrong, onCorrect }: Pro
       return
     }
 
-    haptic('error')
+    feedback('wrong')
     setWrongPair([selected.id, slot.id])
     setShakeKey((k) => k + 1)
     setSelected(null)
