@@ -1,8 +1,14 @@
 # Буряад хэлэн — Telegram Mini App для изучения бурятского языка
 
+[![CI](https://github.com/tarbaevbb/buryat_app/actions/workflows/ci.yml/badge.svg)](https://github.com/tarbaevbb/buryat_app/actions/workflows/ci.yml)
+[![Deploy](https://github.com/tarbaevbb/buryat_app/actions/workflows/deploy.yml/badge.svg)](https://github.com/tarbaevbb/buryat_app/actions/workflows/deploy.yml)
+[![Демо](https://img.shields.io/badge/демо-GitHub%20Pages-58cc02)](https://tarbaevbb.github.io/buryat_app/)
+
 Мини-приложение в стиле Duolingo: карта разделов, уроки с упражнениями,
 сердца, серия дней, XP, гемы и недельный рейтинг. Работает внутри Telegram
 и в обычном браузере.
+
+**Демо:** https://tarbaevbb.github.io/buryat_app/
 
 ## Возможности
 
@@ -31,17 +37,48 @@ npm run dev       # http://localhost:5173 — работает в браузер
 поэтому можно спокойно верстать и тестировать без открытия Telegram.
 
 ```bash
-npm test          # 147 тестов: логика, курс, синхронизация, рендеринг
-npm run build     # сборка в dist/
-npm run preview   # локальный просмотр сборки
+npm test           # 147 тестов: логика, курс, синхронизация, рендеринг
+npm run typecheck  # проверка типов без сборки
+npm run build      # сборка в dist/
+npm run preview    # локальный просмотр сборки
 ```
+
+Эти же команды прогоняются в CI (`.github/workflows/ci.yml`) на каждый push
+и pull request, поэтому расхождение локального и удалённого результата
+маловероятно.
 
 ## Деплой
 
+### GitHub Pages (настроен автоматически)
+
+В репозитории есть два workflow:
+
+| Workflow | Когда запускается | Что делает |
+|---|---|---|
+| `ci.yml` | push в `main`, pull request, вручную | `npm ci` → типы → 147 тестов → сборка |
+| `deploy.yml` | push в `main`, вручную | то же + публикация на GitHub Pages |
+
+Приложение уже опубликовано: **https://tarbaevbb.github.io/buryat_app/**
+
+Сборка использует `base: './'` в `vite.config.ts`, поэтому корректно
+работает на подпути `/buryat_app/`, а `HashRouter` избавляет от нужды
+в SPA-фолбэке.
+
+Чтобы включить облако на опубликованном сайте, добавьте секреты
+в **Settings → Secrets and variables → Actions**:
+
+```
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+```
+
+Без них workflow соберёт приложение в локальном режиме — это рабочий
+сценарий, а не ошибка.
+
+### Другой хостинг
+
 1. `npm run build`
-2. Опубликуйте содержимое `dist/` на любом HTTPS-хостинге:
-   Vercel, Netlify, Cloudflare Pages, GitHub Pages.
-   Приложение использует `HashRouter`, поэтому SPA-фолбэк не нужен.
+2. Опубликуйте содержимое `dist/` на Vercel, Netlify или Cloudflare Pages.
 3. В BotFather:
    - `/newapp` → выберите бота → название, описание, иконка и **URL деплоя**;
    - либо `/setmenubutton` для кнопки меню.
