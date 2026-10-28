@@ -41,11 +41,6 @@ export function feedback(kind: FeedbackKind): void {
   const { sound, haptics } = useSettings.getState()
   const action = MAP[kind]
 
-  // ВРЕМЕННАЯ ОТЛАДКА: видно, дошли ли до вызова и что в настройках.
-  // Если здесь haptics: false — вибрация отключена в профиле, и haptic()
-  // не вызывается вовсе. Логи убрать после выяснения причины.
-  console.log('[feedback]', kind, { sound, haptics })
-
   if (haptics) tgHaptic(action.haptic)
   if (sound && action.sound) playSound(action.sound)
 }

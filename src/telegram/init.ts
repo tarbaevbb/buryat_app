@@ -84,37 +84,18 @@ function safe(fn: () => void): void {
  * Настройку «Вибрация» здесь не проверяем: решение принимает `feedback`
  * в src/lib/feedback.ts, чтобы логика была в одном месте. Вызов напрямую
  * нужен только для случаев, когда вибрация обязана быть (сейчас таких нет).
- *
- * ВРЕМЕННАЯ ОТЛАДКА: логи намеренно оставлены, пока разбираемся, почему
- * отклик не ощущается на iPhone в реальном Mini App. Консоль видна в
- * Safari Web Inspector (Mac → Разработка → [iPhone] → webview).
- * После выяснения причины логи убрать.
  */
 export function haptic(
   type: 'light' | 'medium' | 'heavy' | 'success' | 'error' | 'warning' | 'select',
 ): void {
-  const t = tg()
-  const h = t.HapticFeedback
-
-  console.log('[haptic]', {
-    type,
-    platform: t.platform,
-    version: t.version,
-    hasHaptic: !!h,
-    // isVersionAtLeast есть не во всех версиях типов — читаем мягко.
-    isVersion6_1: (t as unknown as { isVersionAtLeast?: (v: string) => boolean })
-      .isVersionAtLeast?.('6.1'),
-  })
-
-  // Без объекта HapticFeedback дальше идти некуда (старое SDK).
+  const h = tg().HapticFeedback
   if (!h) return
   try {
     if (type === 'select') h.selectionChanged()
     else if (type === 'success' || type === 'error' || type === 'warning')
       h.notificationOccurred(type)
     else h.impactOccurred(type)
-  } catch (e) {
-    console.warn('[haptic] failed', type, e)
+  } catch {
     /* игнорируем */
   }
 }
