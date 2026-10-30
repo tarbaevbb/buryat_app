@@ -49,16 +49,18 @@ interface UnitSpec {
 const unitSpecs: UnitSpec[] = [
   {
     id: 'u1',
-    title: 'Алфавит и звуки',
-    titleBxr: 'Үзэглэл',
-    description: 'Буквы ө, ү, һ и дифтонги. Первые слова.',
+    title: 'Чтение и первые слова',
+    titleBxr: 'Уншалга',
+    description: 'Звуки ө, ү, һ и дифтонги — сразу на настоящих словах.',
     color: '#58cc02',
     colorShadow: '#46a302',
     emoji: '🔤',
     lessons: [
-      { id: 'u1l1', title: 'Гласные', titleBxr: 'Үндэhэн үзэгүүд', tags: ['alphabet', 'vowel'] },
-      { id: 'u1l2', title: 'Особые звуки һ, ө, ү', titleBxr: 'һ, ө, ү', tags: ['consonant', 'vowel'] },
-      { id: 'u1l3', title: 'Дифтонги', titleBxr: 'Дифтонгүүд', tags: ['diphthong'], sentenceIds: ['u1s1', 'u1s2'] },
+      // Уроки строятся из слов с нужным фонетическим признаком, а не из
+      // «звуков» отдельными карточками — иначе задания получаются тавтологичными.
+      { id: 'u1l1', title: 'Звуки ө, ү', titleBxr: 'Ө, ү', tags: ['vowel_oe'], sentenceIds: ['u1s3'] },
+      { id: 'u1l2', title: 'Звук һ', titleBxr: 'Һ һ', tags: ['sound_h'], sentenceIds: ['u1s6'] },
+      { id: 'u1l3', title: 'Дифтонги', titleBxr: 'Дифтонгүүд', tags: ['diphthong'], sentenceIds: ['u1s3'] },
       {
         id: 'u1l4',
         title: 'Читаем слова',
@@ -71,7 +73,7 @@ const unitSpecs: UnitSpec[] = [
         title: 'Повторение раздела',
         titleBxr: 'Дахин hанаха',
         kind: 'review',
-        tags: ['alphabet', 'reading'],
+        tags: ['reading'],
         sentenceIds: ['u1s1', 'u1s3', 'u1s5'],
       },
     ],

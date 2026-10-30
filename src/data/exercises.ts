@@ -1,5 +1,6 @@
 import { course, getSentence, getVocab } from './course'
 import { hashString, makeRng, shuffle } from '../lib/rng'
+import { normalize } from '../lib/normalize'
 import type {
   BuildExercise,
   Exercise,
@@ -49,6 +50,9 @@ function buildReading(
   pool: VocabItem[],
 ): SelectExercise | null {
   if (!vocab.transcription) return null
+  // Транскрипция совпадает с написанием (хүн → хүн): задание бессмысленно —
+  // вопрос и ответ одинаковы, сравнивать нечего.
+  if (normalize(vocab.transcription) === normalize(vocab.bxr)) return null
   const candidates = pool.filter((v) => v.transcription && v.transcription !== vocab.transcription)
   if (candidates.length < 2) return null
   const wrong = shuffle(candidates, rng).slice(0, 2)
@@ -73,9 +77,13 @@ function buildTiles(answer: string, rng: () => number, extraPool: string[]): str
   const words = answer.split(/\s+/).filter(Boolean)
   const target = Math.min(Math.max(words.length + 3, 6), 9)
   const distractors: string[] = []
+  // Сравниваем не по «сырым» строкам, а по нормализованной форме: иначе
+  // дистрактор «хүн» попадёт в плитки ответа «Сайн хүн.» — это та же словоформа,
+  // и после normalize получился бы ещё один заведомо верный вариант.
+  const answerKeys = new Set(words.map((w) => normalize(w)))
   const candidates = shuffle(
     extraPool.filter(
-      (w) => !words.includes(w) && w.split(/\s+/).length === 1,
+      (w) => !answerKeys.has(normalize(w)) && w.split(/\s+/).length === 1,
     ),
     rng,
   )
