@@ -48,11 +48,10 @@ export function useAwardLesson(): (input: AwardInput) => Promise<AwardResult> {
       return { xp: summary.xp, cloud: false }
     }
 
-    // Сервер — источник истины по XP, гемам и серии: подтягиваем его значения,
+    // Сервер — источник истины по XP и серии: подтягиваем его значения,
     // чтобы клиент не «обгонял» базу.
     useProgress.setState((state) => ({
       xp: Math.max(state.xp, server.totalXp),
-      gems: Math.max(state.gems, server.gems),
       streak: Math.max(state.streak, server.streak),
     }))
 
@@ -93,7 +92,6 @@ export function useAwardReview(): (input: ReviewAwardInput) => Promise<AwardResu
 
     useProgress.setState((state) => ({
       xp: Math.max(state.xp, server.totalXp),
-      gems: Math.max(state.gems, server.gems),
       streak: Math.max(state.streak, server.streak),
     }))
 

@@ -197,8 +197,13 @@ $$;
 -- =====================================================================
 -- Начисление награды за урок. XP считает БД, клиент присылает только
 -- lesson_id, score и accuracy — накрутить опыт с клиента нельзя.
+--
+-- DROP перед CREATE: более поздняя миграция меняет форму ответа
+-- (убирает гемы), поэтому при повторном прогоне `create or replace`
+-- упал бы на «cannot change return type».
 -- =====================================================================
-create or replace function public.fn_award_lesson(
+drop function if exists public.fn_award_lesson(text, int, int);
+create function public.fn_award_lesson(
   p_lesson_id text,
   p_score     int,
   p_accuracy  int default 0
@@ -264,8 +269,11 @@ end $$;
 -- =====================================================================
 -- Награда за подход в «Повторении». Формула совпадает с reviewXp()
 -- в src/lib/progress.ts — при изменении править обе стороны.
+--
+-- DROP перед CREATE — по той же причине, что и у fn_award_lesson.
 -- =====================================================================
-create or replace function public.fn_award_review(
+drop function if exists public.fn_award_review(int, int, jsonb);
+create function public.fn_award_review(
   p_correct     int,
   p_total       int,
   p_word_errors jsonb default '{}'::jsonb

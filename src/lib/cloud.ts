@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import type { ProgressSnapshot, WordStat } from './progress'
-import { emptySnapshot } from './progress'
+import { MAX_HEARTS, emptySnapshot } from './progress'
 
 export interface LeaderboardRow {
   rank: number
@@ -15,7 +15,6 @@ export interface LeaderboardRow {
 /** Серверные значения после начисления награды. */
 export interface AwardResponse {
   xp: number
-  gems: number
   streak: number
   totalXp: number
 }
@@ -31,7 +30,6 @@ function parseAward(data: unknown): AwardResponse | null {
   if (!row) return null
   return {
     xp: num(row.xp),
-    gems: num(row.gems),
     streak: num(row.streak),
     totalXp: num(row.total_xp ?? row.level_xp),
   }
@@ -145,7 +143,7 @@ export async function resetRemoteProgress(): Promise<boolean> {
  * jsonb_array_elements.
  *
  * Отправляем только то, что сервер действительно обрабатывает:
- * сердца, факты прохождения уроков и статистику слов. XP, гемы, серию
+ * сердца, факты прохождения уроков и статистику слов. XP, серию
  * и `dailyXp` сервер считает сам — если их прислать, они будут
  * проигнорированы (проверено тестами в scripts/check-migrations.sh).
  * Без этого достаточно было бы прислать `{"xp": 50000000}` и накрутить
@@ -201,8 +199,7 @@ function parseSnapshot(raw: Record<string, unknown>): ProgressSnapshot {
 
   return {
     xp: num(raw.xp, base.xp),
-    gems: num(raw.gems, base.gems),
-    hearts: Math.min(5, Math.max(0, num(raw.hearts, base.hearts))),
+    hearts: Math.min(MAX_HEARTS, Math.max(0, num(raw.hearts, base.hearts))),
     heartsUpdatedAt: num(raw.heartsUpdatedAt, base.heartsUpdatedAt),
     streak: num(raw.streak, base.streak),
     lastActiveDay: (raw.lastActiveDay as string | null) ?? null,

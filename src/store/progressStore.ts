@@ -3,16 +3,13 @@ import { persist } from 'zustand/middleware'
 import { dayKey, daysBetween } from '../lib/dates'
 import {
   MAX_HEARTS,
-  GEMS_PER_REFILL,
-  START_GEMS,
   computeHearts,
-  gemsForXp,
   nextStreak,
   type LessonResult,
   type ProgressSnapshot,
 } from '../lib/progress'
 
-export { MAX_HEARTS, HEART_REFILL_MS, GEMS_PER_REFILL, START_GEMS } from '../lib/progress'
+export { MAX_HEARTS, HEART_REFILL_MS } from '../lib/progress'
 export type { LessonResult } from '../lib/progress'
 
 export interface ProgressState extends ProgressSnapshot {
@@ -38,7 +35,6 @@ export interface ProgressState extends ProgressSnapshot {
   awardLesson: (result: Omit<LessonResult, 'completedAt'>) => void
   awardReview: (correct: number, total: number) => void
   loseHeart: () => void
-  refillHeartsWithGems: () => boolean
   recordWord: (wordId: string, correct: boolean) => void
   /**
    * Учитывает завершённое задание для общей точности.
@@ -77,7 +73,6 @@ export interface PersistedState extends XpCarrier {
 function emptyPersisted(): PersistedState {
   return {
     xp: 0,
-    gems: START_GEMS,
     hearts: MAX_HEARTS,
     heartsUpdatedAt: Date.now(),
     streak: 0,
@@ -97,7 +92,6 @@ function emptyPersisted(): PersistedState {
 export function progressSnapshot(state: XpCarrier | PersistedState | ProgressSnapshot): ProgressSnapshot {
   return {
     xp: state.xp,
-    gems: state.gems,
     hearts: state.hearts,
     heartsUpdatedAt: state.heartsUpdatedAt,
     streak: state.streak,
@@ -112,7 +106,6 @@ export function progressSnapshot(state: XpCarrier | PersistedState | ProgressSna
 function grantXp(state: XpCarrier, xp: number, streak: number, today: string) {
   return {
     xp: state.xp + xp,
-    gems: state.gems + gemsForXp(xp),
     dailyXp: { ...state.dailyXp, [today]: (state.dailyXp[today] ?? 0) + xp },
     streak,
     lastActiveDay: today,
@@ -189,14 +182,6 @@ export const useProgress = create<ProgressState>()(
         })
       },
 
-      refillHeartsWithGems: () => {
-        const state = get()
-        if (state.gems < GEMS_PER_REFILL) return false
-        if (state.heartsNow() >= MAX_HEARTS) return false
-        set({ gems: state.gems - GEMS_PER_REFILL, hearts: MAX_HEARTS, heartsUpdatedAt: Date.now() })
-        return true
-      },
-
       recordWord: (wordId, correct) => {
         set((state) => {
           const prev = state.wordStats[wordId] ?? { errors: 0, seen: 0, lastErrorAt: 0 }
@@ -234,7 +219,7 @@ export const useProgress = create<ProgressState>()(
     }),
     {
       name: 'buryat-progress-v2',
-      version: 2,
+      version: 3,
       partialize: (state) => {
         const {
           heartsNow: _h,
@@ -242,7 +227,6 @@ export const useProgress = create<ProgressState>()(
           awardLesson: _al,
           awardReview: _ar,
           loseHeart: _lh,
-          refillHeartsWithGems: _rg,
           recordWord: _rw,
           recordAttempt: _ra,
           setDisplayName: _sd,
@@ -258,14 +242,19 @@ export const useProgress = create<ProgressState>()(
       /**
        * Миграция с v1: ключ localStorage менялся с `buryat-progress-v1`,
        * поэтому старые записи переносим вручную (см. migrateLegacyProgress).
-       * Заодно домигрируем v2 → v2.1: у старых записей нет `resetPending`.
+       *
+       * v2 → v3: механика гемов удалена, а запас сердец вырос с 5 до 20.
+       * Всем, у кого остался старый запас, выдаём полный — иначе после
+       * обновления игрок оказался бы с 5 сердцами из 20.
        */
       migrate: (persisted, version) => {
         if (!persisted) return persisted as never
-        const state = persisted as Partial<PersistedState>
+        const state = persisted as Partial<PersistedState> & { gems?: number }
+        const { gems: _legacyGems, ...rest } = state
         return {
           ...emptyPersisted(),
-          ...state,
+          ...rest,
+          hearts: version < 3 ? MAX_HEARTS : Math.min(MAX_HEARTS, Math.max(0, state.hearts ?? MAX_HEARTS)),
           syncedSignature: version < 2 ? null : (state.syncedSignature ?? null),
           resetPending: false,
         } as never
@@ -302,16 +291,21 @@ export function migrateLegacyProgress(): void {
     // Переносим только если в новом сторе ещё нет прогресса.
     if (current.xp > 0 || Object.keys(current.lessons).length > 0) return
 
-    const parsed = JSON.parse(raw) as { state?: Partial<PersistedState> }
+    const parsed = JSON.parse(raw) as { state?: Partial<PersistedState> & { gems?: number } }
     const legacy = parsed?.state
     if (!legacy) return
 
+    // `gems` из старого формата отбрасываем: механики гемов больше нет.
+    const { gems: _legacyGems, hearts: _legacyHearts, ...rest } = legacy
+    void _legacyGems
+    void _legacyHearts
+
     useProgress.setState({
       ...emptyPersisted(),
-      ...legacy,
+      ...rest,
       syncedSignature: null,
-      // Сердца пересчитываем от исходной метки времени.
-      hearts: Math.min(MAX_HEARTS, Math.max(0, legacy.hearts ?? MAX_HEARTS)),
+      // Новая экономика: у всех новый игрок начинает с полного запаса.
+      hearts: MAX_HEARTS,
     })
   } catch {
     // Битые данные не должны мешать запуску.

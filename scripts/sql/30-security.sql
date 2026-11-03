@@ -116,7 +116,7 @@ begin
 
   set local role authenticated;
   perform public.fn_push_progress(
-    '{"xp": 50000000, "gems": 1000000, "streak": 9999, "dailyXp": {"2026-01-01": 999999}}'::jsonb
+    '{"xp": 50000000, "streak": 9999, "dailyXp": {"2026-01-01": 999999}}'::jsonb
   );
   reset role;
 

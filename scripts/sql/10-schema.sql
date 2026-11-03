@@ -18,6 +18,30 @@ begin
   end loop;
 end $$;
 
+-- Гемов больше нет, а запас сердец вырос до 20.
+do $$
+declare
+  has_gems boolean;
+  hearts_default text;
+begin
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'gems'
+  ) into has_gems;
+
+  if has_gems then
+    raise exception 'колонка profiles.gems должна быть удалена';
+  end if;
+
+  select column_default into hearts_default
+  from information_schema.columns
+  where table_schema = 'public' and table_name = 'profiles' and column_name = 'hearts';
+
+  if hearts_default is null or position('20' in hearts_default) = 0 then
+    raise exception 'default у profiles.hearts должен быть 20, сейчас %', hearts_default;
+  end if;
+end $$;
+
 -- На каждой таблице с пользовательскими данными должен быть включён RLS.
 do $$
 declare t text;

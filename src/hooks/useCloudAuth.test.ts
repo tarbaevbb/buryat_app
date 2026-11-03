@@ -74,7 +74,7 @@ describe('flushProgress', () => {
 
   it('после сброса обнуляет облако, а не заливает пустой снимок поверх старых XP', async () => {
     // В облаке остался старый прогресс.
-    remoteState = { xp: 500, gems: 90, hearts: 5, streak: 8, lessons: [], dailyXp: {}, wordStats: {} }
+    remoteState = { xp: 500, hearts: 5, streak: 8, lessons: [], dailyXp: {}, wordStats: {} }
 
     useProgress.getState().reset() // resetPending = true
     const ok = await flushProgress()
@@ -136,7 +136,7 @@ describe('resetProgressEverywhere', () => {
 
   it('после офлайн-сброса облако не возвращает старые XP', async () => {
     online = false
-    remoteState = { xp: 777, gems: 50, streak: 20 }
+    remoteState = { xp: 777, hearts: 12, streak: 20 }
     await resetProgressEverywhere()
 
     online = true
@@ -145,7 +145,6 @@ describe('resetProgressEverywhere', () => {
     const s = useProgress.getState()
     // Главное: старый прогресс не «воскрес».
     expect(s.xp).toBe(0)
-    expect(s.gems).toBe(20)
     expect(s.streak).toBe(0)
   })
 })
@@ -155,7 +154,6 @@ describe('снимок прогресса', () => {
     const snapshot = progressSnapshot(useProgress.getState())
     expect(snapshot).toEqual({
       xp: expect.any(Number),
-      gems: expect.any(Number),
       hearts: expect.any(Number),
       heartsUpdatedAt: expect.any(Number),
       streak: expect.any(Number),

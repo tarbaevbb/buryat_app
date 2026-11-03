@@ -22,7 +22,6 @@ export interface LessonResult {
 /** Всё, что синхронизируется между устройством и облаком. */
 export interface ProgressSnapshot {
   xp: number
-  gems: number
   hearts: number
   heartsUpdatedAt: number
   streak: number
@@ -32,10 +31,12 @@ export interface ProgressSnapshot {
   wordStats: Record<string, WordStat>
 }
 
-export const MAX_HEARTS = 5
+/**
+ * Запас сердец. Гемов в игре больше нет: восполнять запас нечем,
+ * поэтому стартовый и максимальный запас увеличен до 20.
+ */
+export const MAX_HEARTS = 20
 export const HEART_REFILL_MS = 30 * 60 * 1000 // одно сердце раз в 30 минут
-export const GEMS_PER_REFILL = 50
-export const START_GEMS = 20
 
 /** Восстановленные сердца с учётом прошедшего времени. */
 export function computeHearts(hearts: number, updatedAt: number, now: number): number {
@@ -116,11 +117,6 @@ export function reviewXp(correct: number, total: number): number {
   const safeCorrect = Math.max(0, Math.min(Math.floor(correct), Math.max(0, total)))
   const perfect = total > 0 && safeCorrect >= total
   return Math.min(20, 2 + safeCorrect + (perfect ? 3 : 0))
-}
-
-/** Округление гемов за XP — та же формула, что в RPC. */
-export function gemsForXp(xp: number): number {
-  return Math.round(Math.max(0, xp) / 5)
 }
 
 /* ------------------------------------------------------------------ *
@@ -223,7 +219,7 @@ function mergeHearts(
 /**
  * Сливает локальное состояние с облачным.
  *
- * Правила: XP, гемы, результаты уроков, XP по дням и статистика слов берутся
+ * Правила: XP, результаты уроков, XP по дням и статистика слов берутся
  * по максимуму (прогресс не «откатывается» и не удваивается); серия — по
  * последней дате занятия; сердца — по текущему (с учётом восстановления) числу.
  *
@@ -236,7 +232,6 @@ export function mergeProgress(
 ): ProgressSnapshot {
   return {
     xp: Math.max(local.xp, remote.xp),
-    gems: Math.max(local.gems, remote.gems),
     ...mergeHearts(local, remote, now),
     ...mergeStreak(local, remote),
     lessons: mergeLessons(local.lessons, remote.lessons),
@@ -249,7 +244,6 @@ export function mergeProgress(
 export function emptySnapshot(): ProgressSnapshot {
   return {
     xp: 0,
-    gems: START_GEMS,
     hearts: MAX_HEARTS,
     heartsUpdatedAt: Date.now(),
     streak: 0,
@@ -283,7 +277,6 @@ export function stateSignature(snapshot: ProgressSnapshot): string {
 export function fullSignature(snapshot: ProgressSnapshot): string {
   return [
     snapshot.xp,
-    snapshot.gems,
     Object.keys(snapshot.lessons).length,
     Object.values(snapshot.dailyXp).reduce((a, b) => a + b, 0),
     stateSignature(snapshot),

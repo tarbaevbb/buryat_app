@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  GEMS_PER_REFILL,
   HEART_REFILL_MS,
   MAX_HEARTS,
   computeHearts,
   emptySnapshot,
   fullSignature,
-  gemsForXp,
   heartsNow,
   levelFromXp,
   mergeProgress,
@@ -36,6 +34,7 @@ describe('computeHearts', () => {
 
   it('не превышает максимум', () => {
     expect(computeHearts(1, NOW, NOW + HEART_REFILL_MS * 100)).toBe(MAX_HEARTS)
+    expect(computeHearts(19, NOW, NOW + HEART_REFILL_MS * 5)).toBe(MAX_HEARTS)
   })
 
   it('при полном запасе не зависит от времени', () => {
@@ -108,7 +107,7 @@ describe('weekXp', () => {
   })
 })
 
-describe('reviewXp и gemsForXp', () => {
+describe('reviewXp', () => {
   it('даёт бонус за идеальный подход', () => {
     expect(reviewXp(10, 10)).toBe(15)
     expect(reviewXp(5, 10)).toBe(7)
@@ -122,24 +121,16 @@ describe('reviewXp и gemsForXp', () => {
     expect(reviewXp(0, 0)).toBe(2)
     expect(reviewXp(-5, 10)).toBe(2)
   })
-
-  it('гемы — округление XP / 5', () => {
-    expect(gemsForXp(15)).toBe(3)
-    expect(gemsForXp(12)).toBe(2)
-    expect(gemsForXp(0)).toBe(0)
-  })
 })
 
 describe('mergeProgress', () => {
-  it('берёт максимум по XP, гемам и результатам уроков', () => {
+  it('берёт максимум по XP и результатам уроков', () => {
     const local = snapshot({
       xp: 100,
-      gems: 10,
       lessons: { u1l1: { lessonId: 'u1l1', score: 80, accuracy: 70, xp: 20, completedAt: 100 } },
     })
     const remote = snapshot({
       xp: 250,
-      gems: 40,
       lessons: {
         u1l1: { lessonId: 'u1l1', score: 95, accuracy: 90, xp: 25, completedAt: 200 },
         u2l1: { lessonId: 'u2l1', score: 60, accuracy: 55, xp: 12, completedAt: 150 },
@@ -148,7 +139,6 @@ describe('mergeProgress', () => {
     const merged = mergeProgress(local, remote, NOW)
 
     expect(merged.xp).toBe(250)
-    expect(merged.gems).toBe(40)
     expect(merged.lessons.u1l1.score).toBe(95)
     expect(merged.lessons.u1l1.completedAt).toBe(200)
     expect(merged.lessons.u2l1.score).toBe(60)
@@ -230,19 +220,19 @@ describe('mergeProgress', () => {
   })
 
   it('сердца: побеждает сторона с большим текущим запасом', () => {
-    // Локально 5 сердец (событие старое, запал успел восстановиться),
-    // в облаке 3 сердца — при синхронизации запас выравнивается вверх.
+    // Локально 19 сердец, в облаке 3 — при синхронизации запас выравнивается вверх.
     const merged = mergeProgress(
-      snapshot({ hearts: 5, heartsUpdatedAt: NOW - 10_000 }),
+      snapshot({ hearts: 19, heartsUpdatedAt: NOW - 10_000 }),
       snapshot({ hearts: 3, heartsUpdatedAt: NOW }),
       NOW,
     )
-    expect(merged.hearts).toBe(MAX_HEARTS)
+    expect(merged.hearts).toBe(19)
   })
 
   it('сердца: восстановление до полного запаса учитывается как полный запас', () => {
+    // 16 сердец плюс 4 интервала восстановления = полный запас (20).
     const merged = mergeProgress(
-      snapshot({ hearts: 1, heartsUpdatedAt: NOW - HEART_REFILL_MS * 4 }),
+      snapshot({ hearts: 16, heartsUpdatedAt: NOW - HEART_REFILL_MS * 4 }),
       snapshot({ hearts: 3, heartsUpdatedAt: NOW }),
       NOW,
     )
@@ -264,7 +254,6 @@ describe('mergeProgress', () => {
   it('идемпотентно: слияние с самим собой ничего не меняет', () => {
     const base = snapshot({
       xp: 123,
-      gems: 7,
       streak: 5,
       lastActiveDay: '2026-05-05',
       hearts: 3,
@@ -297,9 +286,9 @@ describe('подписи состояния', () => {
   })
 
   it('не считает изменением восстановленное сердце', () => {
-    // 4 сердца с давней меткой = уже 5: подпись совпадает с полным запасом.
+    // 4 сердца с меткой интервал назад = уже 5: подпись совпадает с пятью.
     const a = snapshot({ hearts: 5, heartsUpdatedAt: Date.now() })
-    const b = snapshot({ hearts: 4, heartsUpdatedAt: Date.now() - HEART_REFILL_MS * 5 })
+    const b = snapshot({ hearts: 4, heartsUpdatedAt: Date.now() - HEART_REFILL_MS })
     expect(stateSignature(a)).toBe(stateSignature(b))
   })
 
@@ -326,10 +315,13 @@ describe('emptySnapshot', () => {
   it('даёт стартовое состояние', () => {
     const s = emptySnapshot()
     expect(s.xp).toBe(0)
-    expect(s.gems).toBeGreaterThan(0)
     expect(s.hearts).toBe(MAX_HEARTS)
     expect(s.streak).toBe(0)
     expect(s.lastActiveDay).toBeNull()
-    expect(GEMS_PER_REFILL).toBeGreaterThan(0)
+  })
+
+  it('стартовый запас сердец — 20, гемов нет', () => {
+    expect(MAX_HEARTS).toBe(20)
+    expect(emptySnapshot()).not.toHaveProperty('gems')
   })
 })

@@ -147,7 +147,7 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
--- 8. Сброс: XP, гемы, серия, уроки и статистика очищаются.
+-- 8. Сброс: XP, серия, уроки и статистика очищаются, сердца — полный запас.
 -- ---------------------------------------------------------------------
 do $$
 declare p record;
@@ -157,8 +157,8 @@ begin
   select * into p from public.profiles
   where id = '11111111-1111-1111-1111-111111111111';
 
-  if p.xp <> 0 or p.gems <> 20 or p.streak <> 0 or p.last_active_date is not null then
-    raise exception 'сброс неполный: xp=% gems=% streak=%', p.xp, p.gems, p.streak;
+  if p.xp <> 0 or p.hearts <> 20 or p.streak <> 0 or p.last_active_date is not null then
+    raise exception 'сброс неполный: xp=% hearts=% streak=%', p.xp, p.hearts, p.streak;
   end if;
 
   if exists (select 1 from public.user_progress
@@ -192,7 +192,7 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
--- 10. Ограничения целостности: score ≤ 100, сердца ≤ 5.
+-- 10. Ограничения целостности: score ≤ 100, сердца ≤ 20.
 -- ---------------------------------------------------------------------
 do $$
 begin
@@ -204,7 +204,7 @@ begin
   end;
 
   begin
-    update public.profiles set hearts = 6
+    update public.profiles set hearts = 21
     where id = '11111111-1111-1111-1111-111111111111';
     raise exception 'CHECK на hearts не сработал';
   exception when check_violation then null;

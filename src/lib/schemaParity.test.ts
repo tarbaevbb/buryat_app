@@ -1,19 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { HEART_REFILL_MS, reviewXp } from './progress'
+import { HEART_REFILL_MS, MAX_HEARTS, reviewXp } from './progress'
 
 /**
  * Схема читается из миграций — это единственный источник правды
  * (файл supabase/schema.sql был дубликатом и удалён). Если миграций
  * станет несколько, содержимое просто склеится в порядке применения.
+ *
+ * `latest` — последняя миграция: она описывает итоговое состояние схемы,
+ * поэтому проверки «как сейчас устроено» смотрят в неё, а не в историю.
  */
 const migrationsDir = resolve(process.cwd(), 'supabase/migrations')
-const schema = readdirSync(migrationsDir)
+const files = readdirSync(migrationsDir)
   .filter((f) => f.endsWith('.sql'))
   .sort()
-  .map((f) => readFileSync(resolve(migrationsDir, f), 'utf8'))
-  .join('\n')
+const schema = files.map((f) => readFileSync(resolve(migrationsDir, f), 'utf8')).join('\n')
+const latest = readFileSync(resolve(migrationsDir, files[files.length - 1]), 'utf8')
 
 /**
  * Формулы награды и восстановления сердец продублированы на клиенте
@@ -46,13 +49,16 @@ describe('согласованность клиента и схемы Supabase',
     expect(schema).toMatch(/when v_score > v_prev then 5 else 1 end/)
   })
 
-  it('начисление гемов совпадает: round(xp / 5)', () => {
-    expect(schema).toContain('v_gems := round(v_xp / 5.0)')
+  it('механика гемов удалена из схемы', () => {
+    // Колонка, начисления и выдача в снимке — всё должно исчезнуть.
+    expect(latest).toContain('drop column if exists gems')
+    expect(latest).not.toContain('gems = p.gems')
+    expect(latest).not.toContain("'gems'")
   })
 
-  it('сброс прогресса обнуляет XP, гемы и серию', () => {
+  it('сброс прогресса обнуляет XP и серию, оставляя полный запас сердец', () => {
     expect(schema).toContain('fn_reset_progress')
-    expect(schema).toMatch(/set xp = 0,\s+gems = 20,\s+hearts = 5/)
+    expect(latest).toMatch(/set xp = 0,\s+hearts = 20/)
   })
 
   it('все RPC, которые вызывает клиент, объявлены в схеме', () => {
@@ -70,8 +76,9 @@ describe('согласованность клиента и схемы Supabase',
     }
   })
 
-  it('сердца на сервере ограничены пятью', () => {
-    expect(schema).toContain('least(5, greatest(0, coalesce(p_hearts, 5))')
+  it('сердца на сервере ограничены двадцатью', () => {
+    expect(MAX_HEARTS).toBe(20)
+    expect(latest).toContain('least(20, greatest(0, coalesce(p_hearts, 20))')
   })
 
   it('сервер не суммирует XP при отправке снимка (идемпотентность)', () => {
@@ -84,10 +91,10 @@ describe('согласованность клиента и схемы Supabase',
   })
 
   /**
-   * Регрессия: `RETURNS TABLE (xp, gems, ...)` объявляет переменные с теми же
-   * именами, что и колонки `profiles`. Выражение `set xp = xp + v_xp` тогда
-   * падает с «column reference "xp" is ambiguous» — награда не начисляется
-   * вообще. Лечится алиасом таблицы, его и проверяем.
+   * Регрессия: `RETURNS TABLE (xp, streak, total_xp)` объявляет переменные
+   * с теми же именами, что и колонки `profiles`. Выражение `set xp = xp + v_xp`
+   * тогда падает с «column reference "xp" is ambiguous» — награда не
+   * начисляется вообще. Лечится алиасом таблицы, его и проверяем.
    */
   it('в начисляющих функциях есть алиас таблицы (иначе ambiguous column)', () => {
     expect(schema).toContain('update public.profiles as p')
@@ -99,7 +106,7 @@ describe('согласованность клиента и схемы Supabase',
 
   it('каждая начисляющая функция возвращает total_xp, а не level_xp', () => {
     // Клиент читает server.totalXp из поля total_xp.
-    expect(schema).toContain('returns table (xp integer, gems integer, streak integer, total_xp integer)')
+    expect(latest).toContain('returns table (xp integer, streak integer, total_xp integer)')
     expect(schema).not.toContain('level_xp integer')
   })
 })

@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
-  GEMS_PER_REFILL,
   HEART_REFILL_MS,
   MAX_HEARTS,
   levelFromXp,
@@ -16,12 +15,11 @@ function reset() {
 describe('progressStore', () => {
   beforeEach(reset)
 
-  it('начисляет XP, гемы и серию за урок', () => {
+  it('начисляет XP и серию за урок', () => {
     useProgress.getState().awardLesson({ lessonId: 'u1l1', score: 100, accuracy: 100, xp: 18 })
     const s = useProgress.getState()
     expect(s.xp).toBe(18)
     expect(s.streak).toBe(1)
-    expect(s.gems).toBeGreaterThan(20) // стартовые 20 + награда
     expect(s.lessons['u1l1'].score).toBe(100)
   })
 
@@ -94,30 +92,6 @@ describe('progressStore', () => {
   it('не восстанавливает больше максимума', () => {
     useProgress.setState({ heartsUpdatedAt: Date.now() - HEART_REFILL_MS * 999 })
     expect(useProgress.getState().heartsNow()).toBe(MAX_HEARTS)
-  })
-
-  it('обменивает гемы на полный запас сердец', () => {
-    const store = useProgress.getState()
-    store.loseHeart()
-    store.loseHeart()
-    useProgress.setState({ gems: GEMS_PER_REFILL })
-
-    expect(store.refillHeartsWithGems()).toBe(true)
-    expect(useProgress.getState().hearts).toBe(MAX_HEARTS)
-    expect(useProgress.getState().gems).toBe(0)
-  })
-
-  it('отказывает в восстановлении без гемов', () => {
-    useProgress.getState().loseHeart()
-    useProgress.setState({ gems: GEMS_PER_REFILL - 1 })
-    expect(useProgress.getState().refillHeartsWithGems()).toBe(false)
-    expect(useProgress.getState().gems).toBe(GEMS_PER_REFILL - 1)
-  })
-
-  it('отказывает в восстановлении при полном запасе', () => {
-    useProgress.setState({ gems: 100 })
-    expect(useProgress.getState().refillHeartsWithGems()).toBe(false)
-    expect(useProgress.getState().gems).toBe(100)
   })
 
   it('накапливает статистику по словам', () => {
@@ -198,7 +172,6 @@ describe('progressStore', () => {
   it('применяет снимок из облака', () => {
     useProgress.getState().applySnapshot({
       xp: 500,
-      gems: 80,
       hearts: 3,
       heartsUpdatedAt: Date.now(),
       streak: 7,

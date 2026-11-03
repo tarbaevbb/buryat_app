@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emptySnapshot } from './progress'
+import { MAX_HEARTS, emptySnapshot } from './progress'
 
 /**
  * Фейковый Supabase: перехватывает `.rpc(...)` и записывает вызовы,
@@ -61,24 +61,24 @@ describe('cloud: лидерборд', () => {
 
 describe('cloud: награды', () => {
   it('читает ответ fn_award_lesson (массив из строки)', async () => {
-    handler = () => ({ data: [{ xp: 15, gems: 3, streak: 4, total_xp: 315 }], error: null })
+    handler = () => ({ data: [{ xp: 15, streak: 4, total_xp: 315 }], error: null })
     const res = await cloud.awardLessonRemote('u1l1', 100, 100)
     expect(calls[0]).toEqual({
       fn: 'fn_award_lesson',
       args: { p_lesson_id: 'u1l1', p_score: 100, p_accuracy: 100 },
     })
-    expect(res).toEqual({ xp: 15, gems: 3, streak: 4, totalXp: 315 })
+    expect(res).toEqual({ xp: 15, streak: 4, totalXp: 315 })
   })
 
   it('читает ответ fn_award_review', async () => {
-    handler = () => ({ data: [{ xp: 15, gems: 3, streak: 2, total_xp: 415 }], error: null })
+    handler = () => ({ data: [{ xp: 15, streak: 2, total_xp: 415 }], error: null })
     const res = await cloud.awardReviewRemote(10, 10, {})
     expect(calls[0].fn).toBe('fn_award_review')
     expect(res?.xp).toBe(15)
   })
 
   it('терпит ответ-объект вместо массива', async () => {
-    handler = () => ({ data: { xp: 7, gems: 1, streak: 1, total_xp: 7 }, error: null })
+    handler = () => ({ data: { xp: 7, streak: 1, total_xp: 7 }, error: null })
     const res = await cloud.awardLessonRemote('u1l1', 50, 40)
     expect(res?.xp).toBe(7)
   })
@@ -93,7 +93,6 @@ describe('cloud: награды', () => {
 describe('cloud: снимок прогресса', () => {
   const remotePayload = {
     xp: 300,
-    gems: 60,
     hearts: 4,
     heartsUpdatedAt: 1_700_000_000_000,
     streak: 9,
@@ -118,9 +117,9 @@ describe('cloud: снимок прогресса', () => {
     expect(snap?.dailyXp['2026-05-05']).toBe(22)
   })
 
-  it('ограничивает сердца диапазоном 0..5', async () => {
+  it('ограничивает сердца диапазоном 0..MAX_HEARTS', async () => {
     handler = () => ({ data: { ...remotePayload, hearts: 99 }, error: null })
-    expect((await cloud.fetchRemoteProgress())?.hearts).toBe(5)
+    expect((await cloud.fetchRemoteProgress())?.hearts).toBe(MAX_HEARTS)
 
     handler = () => ({ data: { ...remotePayload, hearts: -3 }, error: null })
     expect((await cloud.fetchRemoteProgress())?.hearts).toBe(0)
@@ -130,7 +129,7 @@ describe('cloud: снимок прогресса', () => {
     handler = () => ({ data: {}, error: null })
     const snap = await cloud.fetchRemoteProgress()
     expect(snap?.xp).toBe(0)
-    expect(snap?.gems).toBe(emptySnapshot().gems)
+    expect(snap?.hearts).toBe(emptySnapshot().hearts)
     expect(snap?.lessons).toEqual({})
   })
 
@@ -157,7 +156,7 @@ describe('cloud: снимок прогресса', () => {
   })
 
   /**
-   * Ключевая проверка безопасности: клиент не должен отправлять XP, гемы,
+   * Ключевая проверка безопасности: клиент не должен отправлять XP,
    * серию и dailyXp. Раньше они уходили в payload, и сервер их принимал —
    * достаточно было подменить значение, чтобы накрутить себе прогресс.
    */
@@ -166,7 +165,6 @@ describe('cloud: снимок прогресса', () => {
     const snapshot = {
       ...emptySnapshot(),
       xp: 50000000,
-      gems: 999999,
       streak: 9999,
       lastActiveDay: '2026-01-01',
       dailyXp: { '2026-01-01': 50000000 },

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { useProgress } from './progressStore'
+import { MAX_HEARTS, useProgress } from './progressStore'
 import { generateExercises, exerciseVocabIds } from '../data/exercises'
 import { sessionSummary, useSession } from './sessionStore'
 import type { Exercise } from '../data/types'
@@ -50,7 +50,7 @@ describe('точность урока', () => {
     const s = useProgress.getState()
     expect(s.totalMistakes).toBe(0)
     expect(s.totalExercises).toBeGreaterThan(0)
-    expect(s.hearts).toBe(5)
+    expect(s.hearts).toBe(MAX_HEARTS)
   })
 
   it('одна ошибка портит ровно одно задание', () => {
@@ -58,14 +58,16 @@ describe('точность урока', () => {
     const s = useProgress.getState()
     expect(s.totalMistakes).toBe(1)
     expect(s.totalExercises).toBe(summary.total)
-    expect(s.hearts).toBe(4)
+    expect(s.hearts).toBe(MAX_HEARTS - 1)
     // Точность = (задания - ошибки) / задания.
     expect(s.totalExercises - s.totalMistakes).toBe(summary.total - 1)
   })
 
   it('сердца не уходят в минус при множестве ошибок', () => {
-    playLesson('u3l1', () => true)
-    expect(useProgress.getState().hearts).toBe(0)
+    const { summary } = playLesson('u3l1', () => true)
+    // Каждое задание закрыто с ошибкой — минус одно сердце за задание.
+    expect(useProgress.getState().hearts).toBe(Math.max(0, MAX_HEARTS - summary.total))
+    expect(useProgress.getState().hearts).toBeGreaterThanOrEqual(0)
   })
 
   it('слова задания попадают в статистику', () => {

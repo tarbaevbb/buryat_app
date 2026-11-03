@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { generateExercises, exerciseVocabIds } from '../../data/exercises'
 import { getLesson } from '../../data/course'
-import { GEMS_PER_REFILL, useProgress } from '../../store/progressStore'
+import { HEART_REFILL_MS, useProgress } from '../../store/progressStore'
 import { sessionSummary, useSession } from '../../store/sessionStore'
 import { feedback, primeFeedback } from '../../lib/feedback'
 import { isTelegram, lockSwipes, unlockSwipes } from '../../telegram/init'
@@ -34,8 +34,7 @@ export function LessonScreen({ lessonId, onExit }: Props) {
   const session = useSession()
   const { start, submitCorrect, submitWrong, next, clear } = session
   const loseHeart = useProgress((s) => s.loseHeart)
-  const refill = useProgress((s) => s.refillHeartsWithGems)
-  const gems = useProgress((s) => s.gems)
+  const hearts = useProgress((s) => s.hearts)
   const heartsNow = useProgress((s) => s.heartsNow)
   const recordWord = useProgress((s) => s.recordWord)
   const recordAttempt = useProgress((s) => s.recordAttempt)
@@ -148,41 +147,30 @@ export function LessonScreen({ lessonId, onExit }: Props) {
     )
   }
 
-  if (outOfHearts) {
+  // Гемов нет, поэтому «выкупить» сердца нельзя: ждём, пока одно
+  // восстановится само. `Hearts` тикает раз в секунду и обновляет стор,
+  // поэтому экран сам вернётся к уроку.
+  if (outOfHearts && hearts <= 0) {
+    const refillMinutes = Math.round(HEART_REFILL_MS / 60000)
     return (
       <div className="flex min-h-full flex-col items-center justify-center gap-4 p-6 text-center">
         <span className="text-5xl">💔</span>
         <h2 className="text-xl font-black">Сердца закончились</h2>
         <p className="text-sm text-tg-hint">
-          Восстановите сердца за {GEMS_PER_REFILL}💎 или подождите — они возвращаются сами.
+          Сердца восстанавливаются сами — по одному каждые {refillMinutes} минут.
+          Можно вернуться позже и продолжить урок.
         </p>
         <div className="w-full">
           <Hearts />
         </div>
-        <div className="flex w-full gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              if (refill()) {
-                feedback('correct')
-                setOutOfHearts(false)
-              }
-            }}
-            disabled={gems < GEMS_PER_REFILL}
-            style={{ ['--btn-shadow' as string]: 'var(--color-danger-shadow)' }}
-            className="btn-3d no-select flex-1 bg-danger py-3 text-white disabled:opacity-40"
-          >
-            За {GEMS_PER_REFILL}💎
-          </button>
-          <button
-            type="button"
-            onClick={onExit}
-            style={{ ['--btn-shadow' as string]: 'rgba(0,0,0,0.15)' }}
-            className="btn-3d no-select flex-1 bg-tg-secondary-bg py-3 text-tg-text"
-          >
-            Выйти
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onExit}
+          style={{ ['--btn-shadow' as string]: 'rgba(0,0,0,0.15)' }}
+          className="btn-3d no-select w-full bg-tg-secondary-bg py-3 text-tg-text"
+        >
+          Выйти
+        </button>
       </div>
     )
   }

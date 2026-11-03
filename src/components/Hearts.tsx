@@ -1,19 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Heart } from 'lucide-react'
-import {
-  GEMS_PER_REFILL,
-  HEART_REFILL_MS,
-  MAX_HEARTS,
-  useProgress,
-} from '../store/progressStore'
+import { HEART_REFILL_MS, MAX_HEARTS, useProgress } from '../store/progressStore'
 
-/** Сердца с таймером восстановления. */
+/**
+ * Сердца с таймером восстановления.
+ *
+ * Гемов в игре нет, поэтому «купить» запас нельзя: он восстанавливается
+ * сам по одному сердцу за `HEART_REFILL_MS`.
+ */
 export function Hearts({ compact = false }: { compact?: boolean }) {
   const hearts = useProgress((s) => s.hearts)
   const heartsUpdatedAt = useProgress((s) => s.heartsUpdatedAt)
   const regenHearts = useProgress((s) => s.regenHearts)
-  const refill = useProgress((s) => s.refillHeartsWithGems)
-  const gems = useProgress((s) => s.gems)
   const [now, setNow] = useState(Date.now())
 
   useEffect(() => {
@@ -50,16 +48,6 @@ export function Hearts({ compact = false }: { compact?: boolean }) {
           {hearts >= MAX_HEARTS ? 'Все сердца на месте' : `Следующее через ~${minutesLeft} мин.`}
         </div>
       </div>
-      {hearts < MAX_HEARTS && (
-        <button
-          type="button"
-          disabled={gems < GEMS_PER_REFILL}
-          onClick={() => refill()}
-          className="rounded-xl bg-danger px-3 py-2 text-sm font-bold text-white disabled:opacity-40"
-        >
-          Восстановить · {GEMS_PER_REFILL}💎
-        </button>
-      )}
     </div>
   )
 }

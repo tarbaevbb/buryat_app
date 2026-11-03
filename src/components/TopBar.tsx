@@ -1,4 +1,4 @@
-import { Flame, Gem, Zap } from 'lucide-react'
+import { Flame, Zap } from 'lucide-react'
 import { levelFromXp, useProgress } from '../store/progressStore'
 
 export function XpBar({ xp }: { xp: number }) {
@@ -18,10 +18,9 @@ export function XpBar({ xp }: { xp: number }) {
   )
 }
 
-/** Верхняя панель: streak, гемы, XP. */
+/** Верхняя панель: streak и XP. */
 export function TopBar({ showXp = false }: { showXp?: boolean }) {
   const streak = useProgress((s) => s.streak)
-  const gems = useProgress((s) => s.gems)
   const xp = useProgress((s) => s.xp)
 
   return (
@@ -29,7 +28,6 @@ export function TopBar({ showXp = false }: { showXp?: boolean }) {
       <div className="flex items-center justify-between gap-3 px-4 py-3">
         <div className="flex items-center gap-3">
           <Stat icon={<Flame size={18} className="fill-orange-400 text-orange-400" />} value={streak} />
-          <Stat icon={<Gem size={18} className="text-sky" />} value={gems} />
           <Stat icon={<Zap size={18} className="fill-gold text-gold" />} value={xp} />
         </div>
         <span className="text-sm font-bold text-tg-hint">Буряад хэлэн</span>

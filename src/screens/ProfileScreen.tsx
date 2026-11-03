@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Flame, Zap, BookOpen, Target, Gem, Cloud, CloudOff, RotateCcw, Loader } from 'lucide-react'
+import { Flame, Zap, BookOpen, Target, Cloud, CloudOff, RotateCcw, Loader } from 'lucide-react'
 import { TopBar, XpBar } from '../components/TopBar'
 import { Hearts } from '../components/Hearts'
 import { useProgress, levelFromXp } from '../store/progressStore'
@@ -17,7 +17,6 @@ export function ProfileScreen() {
 
   const {
     xp,
-    gems,
     streak,
     lessons,
     wordStats,
@@ -112,7 +111,6 @@ export function ProfileScreen() {
             label="Серия дней"
             value={streak}
           />
-          <Metric icon={<Gem size={18} className="text-sky" />} label="Гемы" value={gems} />
           <Metric
             icon={<Target size={18} className="text-danger" />}
             label="Точность"
