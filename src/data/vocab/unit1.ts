@@ -1,58 +1,75 @@
 import type { VocabItem } from '../types'
 
 /**
- * Раздел 1. Уншалга — чтение и первые слова.
+ * Раздел 1. Танилсалга — знакомство.
  *
- * Раньше здесь были отдельные «звуки» (pos: 'sound' / 'letter'): буквы,
- * дифтонги и их транскрипции. Из них генератор упражнений делал бессмысленные
- * задания («Ы ы» → «звук [ы]», «уй» → «уй»), поэтому раздел переработан:
- * все уроки теперь собираются из настоящих слов, а фонетика отрабатывается
- * на них (слова с ө, ү, һ и дифтонгами).
+ * Содержание взято из тематического списка фраз «Знакомство» (прислан
+ * носителем): приветствия по времени суток, имя и фамилия, возраст,
+ * происхождение и национальность. Бурятский текст сохранён как в источнике.
  *
- * Теги здесь только «учебные» (reading + фонетические подтеги). Служебные
- * темы (food, home, animal…) не ставятся намеренно: `byTags()` собирает
- * слова по всему курсу, и такие теги утаскивали бы эти слова в чужие разделы.
+ * Теги здесь только «учебные»: они описывают, в какой урок попадает фраза.
+ * Служебные темы (food, home, animal…) не ставятся намеренно — `byTags()`
+ * собирает слова по всему курсу, и общий тег утащил бы фразу в чужой раздел.
  */
 export const unit1: VocabItem[] = [
-  // --- Гласные ө, ү ---
-  { id: 'hun', bxr: 'хүн', ru: 'человек', transcription: 'хүн', pos: 'noun', tags: ['reading', 'vowel_oe'] },
-  { id: 'ughe', bxr: 'үгэ', ru: 'слово', transcription: 'үгэ', pos: 'noun', tags: ['reading', 'vowel_oe'] },
-  { id: 'uzeg', bxr: 'үзэг', ru: 'буква', transcription: 'үзэг', pos: 'noun', tags: ['reading', 'vowel_oe'] },
-  { id: 'huen', bxr: 'һүн', ru: 'молоко', transcription: 'һүн', pos: 'noun', tags: ['reading', 'vowel_oe', 'sound_h'], note: 'сүү — вариант написания' },
+  // --- Приветствия и вежливость ---
+  { id: 'sain_baina_greet', bxr: 'Сайн байна!', ru: 'Здравствуйте!', pos: 'phrase', tags: ['greet_day'] },
+  { id: 'mendee_greet', bxr: 'Мэндээ!', ru: 'Привет!', pos: 'phrase', tags: ['greet_day'] },
+  { id: 'ugluuney_mende', bxr: 'Үглөөнэй мэндэ!', ru: 'Доброе утро!', pos: 'phrase', tags: ['greet_day'] },
+  { id: 'uderey_mende', bxr: 'Үдэрэй мэндэ!', ru: 'Добрый день!', pos: 'phrase', tags: ['greet_day'] },
+  { id: 'udesyn_mende', bxr: 'Үдэшын мэндэ!', ru: 'Добрый вечер!', pos: 'phrase', tags: ['greet_day'] },
+  { id: 'khulisegty', bxr: 'Хүлисэгты', ru: 'Извините', pos: 'phrase', tags: ['greet_day'] },
+  { id: 'bayarla', bxr: 'баярлалаа', ru: 'спасибо', pos: 'phrase', tags: ['greet_day'] },
+  { id: 'bayartai', bxr: 'баяртай', ru: 'до свидания', pos: 'phrase', tags: ['greet_day'] },
+  { id: 'honin_yuun_be', bxr: 'һонин юун бэ?', ru: 'Что нового?', pos: 'phrase', tags: ['greet_day'] },
 
-  // --- Звук һ ---
-  { id: 'usun', bxr: 'уһан', ru: 'вода', transcription: 'уhан', pos: 'noun', tags: ['reading', 'sound_h'] },
-  { id: 'hain', bxr: 'һайн', ru: 'хороший', transcription: 'hайн', pos: 'adj', tags: ['reading', 'sound_h', 'diphthong'] },
+  // --- Имя, фамилия, отчество ---
+  { id: 'minii_nere', bxr: 'Минии нэрэ…', ru: 'Меня зовут…', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'famili_mini', bxr: 'Фамилимни…', ru: 'Моя фамилия…', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'obogtoib', bxr: '… гэжэ обогтойб', ru: 'Моё отчество…', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'shii_khen_nereteibshi', bxr: 'Ши хэн гэжэ нэрэтэйбши?', ru: 'Как тебя зовут?', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'shii_khen_famili', bxr: 'Ши хэн гэжэ фамилитайбши?', ru: 'Как твоя фамилия?', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'khen_obogtoibshi', bxr: 'Хэн гэжэ обогтойбши?', ru: 'Как ваше отчество?', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'neree_khelys', bxr: 'Нэрээ хэлыш даа', ru: 'Назови своё имя', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'neree_beshegdedeg', bxr: 'Танай нэрэ яагаад бэшэгдэдэг бэ?', ru: 'Как пишется ваше имя?', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'nereer_duudakha', bxr: 'Би таниие нэрээртнай дуудахаб', ru: 'Я буду звать вас по имени', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'nere', bxr: 'нэрэ', ru: 'имя', pos: 'noun', tags: ['intro_name'], transcription: 'нэрэ' },
 
-  // --- Дифтонги ---
-  { id: 'sai', bxr: 'сай', ru: 'чай', transcription: 'сай', pos: 'noun', tags: ['reading', 'diphthong'] },
-  { id: 'noho', bxr: 'нохой', ru: 'собака', transcription: 'нохой', pos: 'noun', tags: ['reading', 'diphthong'] },
+  // --- Возраст ---
+  { id: 'shii_khedyteibshi', bxr: 'Ши хэдытэйбши?', ru: 'Сколько тебе лет?', pos: 'phrase', tags: ['intro_age'] },
+  { id: 'bi_arbataib', bxr: 'Би арбатайб', ru: 'Мне 10 лет', pos: 'phrase', tags: ['intro_age'] },
+  { id: 'ta_nahaa_khusenkhei', bxr: 'Та наһаа хүсэнхэй гүт?', ru: 'Вы совершеннолетний?', pos: 'phrase', tags: ['intro_age'] },
+  { id: 'bi_usheo', bxr: 'Үгы, би үшөө наһаяа хүсөөдүйб', ru: 'Нет, я ещё несовершеннолетний', pos: 'phrase', tags: ['intro_age'] },
+  { id: 'ta_khezee_turoobta', bxr: 'Та хэзээ түрөөбта?', ru: 'Когда вы родились?', pos: 'phrase', tags: ['intro_age'] },
+  { id: 'bi_2002', bxr: 'Би 2002 оной майн 15-да түрөөб', ru: 'Я родился 15 мая 2002 года', pos: 'phrase', tags: ['intro_age'] },
+  { id: 'turehen_uderi', bxr: 'Танай түрэһэн үдэр хэзээб?', ru: 'Какого числа ваш день рождения?', pos: 'phrase', tags: ['intro_age'] },
+  { id: 'bi', bxr: 'би', ru: 'я', pos: 'pron', tags: ['intro_age'], transcription: 'би' },
+  { id: 'shi', bxr: 'ши', ru: 'ты', pos: 'pron', tags: ['intro_age'], transcription: 'ши' },
+  { id: 'ta', bxr: 'та', ru: 'вы', pos: 'pron', tags: ['intro_age'], transcription: 'та' },
 
-  // --- Остальные слова для чтения ---
-  { id: 'ger', bxr: 'гэр', ru: 'дом', transcription: 'гэр', pos: 'noun', tags: ['reading'] },
-  { id: 'morin', bxr: 'морин', ru: 'лошадь', transcription: 'морин', pos: 'noun', tags: ['reading'] },
-  { id: 'nom', bxr: 'ном', ru: 'книга', transcription: 'ном', pos: 'noun', tags: ['reading'] },
-  { id: 'khelen', bxr: 'хэлэн', ru: 'язык (речь)', transcription: 'хэлэн', pos: 'noun', tags: ['reading'] },
-  { id: 'naran', bxr: 'наран', ru: 'солнце', transcription: 'наран', pos: 'noun', tags: ['reading'] },
-  { id: 'modon', bxr: 'модон', ru: 'дерево', transcription: 'модон', pos: 'noun', tags: ['reading'] },
-  { id: 'ehe', bxr: 'ехэ', ru: 'большой', transcription: 'ехэ', pos: 'adj', tags: ['reading'] },
-  { id: 'khara', bxr: 'хара', ru: 'чёрный', transcription: 'хара', pos: 'adj', tags: ['reading'] },
-  { id: 'sagaan', bxr: 'сагаан', ru: 'белый', transcription: 'сагаан', pos: 'adj', tags: ['reading'] },
-  { id: 'ulaan', bxr: 'улаан', ru: 'красный', transcription: 'улаан', pos: 'adj', tags: ['reading'] },
-  { id: 'nogoon', bxr: 'ногоон', ru: 'зелёный', transcription: 'ногоон', pos: 'adj', tags: ['reading'] },
-  { id: 'shara', bxr: 'шара', ru: 'жёлтый', transcription: 'шара', pos: 'adj', tags: ['reading'] },
-  { id: 'talha', bxr: 'талха', ru: 'хлеб', transcription: 'талха', pos: 'noun', tags: ['reading'] },
-  { id: 'buga', bxr: 'буга', ru: 'олень', transcription: 'буга', pos: 'noun', tags: ['reading'], needsReview: true },
-  { id: 'yabaha', bxr: 'ябаха', ru: 'идти', transcription: 'ябаха', pos: 'verb', tags: ['reading'] },
-  { id: 'uuha', bxr: 'ууха', ru: 'пить', transcription: 'ууха', pos: 'verb', tags: ['reading'] },
-  { id: 'edikhe', bxr: 'эдихэ', ru: 'есть (кушать)', transcription: 'эдихэ', pos: 'verb', tags: ['reading'] },
+  // --- Откуда вы и кто по национальности ---
+  { id: 'ta_khaanahaa', bxr: 'Та хаанаһаа ерээбта?', ru: 'Откуда вы приехали?', pos: 'phrase', tags: ['intro_origin'] },
+  { id: 'ta_khaanakhibta', bxr: 'Та хаанахибта?', ru: 'Откуда вы родом?', pos: 'phrase', tags: ['intro_origin'] },
+  { id: 'ta_yamar_yahanaipta', bxr: 'Та ямар яһанайбта?', ru: 'Какая у вас национальность?', pos: 'phrase', tags: ['intro_origin'] },
+  { id: 'bi_buryaad', bxr: 'Би буряад яһанайб', ru: 'Я по национальности бурят', pos: 'phrase', tags: ['intro_origin'] },
+  { id: 'bi_orod', bxr: 'Би ород яһанайб', ru: 'Я по национальности русский', pos: 'phrase', tags: ['intro_origin'] },
+  { id: 'tanilhan_bayartai', bxr: 'Тантай танилсаһандаа ехэ баяртай байнаб', ru: 'Я очень рад, что познакомился с вами', pos: 'phrase', tags: ['intro_origin'] },
+  { id: 'yaazha_uulzaba', bxr: 'Яажа шамтай уулзаба гээшэбиб!', ru: 'Как хорошо, что я тебя встретил!', pos: 'phrase', tags: ['intro_origin'] },
+  { id: 'holiin_turel', bxr: 'Бидэ холын түрэлбди', ru: 'Мы дальние родственники', pos: 'phrase', tags: ['intro_origin'] },
+  { id: 'turel_beshe', bxr: 'Тэрэ намтай түрэл бэшэ', ru: 'Он мне не родственник', pos: 'phrase', tags: ['intro_origin'] },
 ]
 
 export const unit1Sentences = [
-  { id: 'u1s1', bxr: 'Энэ гэр.', ru: 'Это дом.', tags: ['reading', 'u1'] },
-  { id: 'u1s2', bxr: 'Энэ морин.', ru: 'Это лошадь.', tags: ['reading', 'u1'] },
-  { id: 'u1s3', bxr: 'Сайн хүн.', ru: 'Хороший человек.', tags: ['reading', 'u1'], needsReview: true },
-  { id: 'u1s4', bxr: 'Сагаан талха.', ru: 'Белый хлеб.', tags: ['reading', 'u1'] },
-  { id: 'u1s5', bxr: 'Ногоон модон.', ru: 'Зелёное дерево.', tags: ['reading', 'u1'] },
-  { id: 'u1s6', bxr: 'Би уһан уунаб.', ru: 'Я пью воду.', tags: ['reading', 'u1'] },
+  { id: 'u1s1', bxr: 'Сайн байна!', ru: 'Здравствуйте!', tags: ['greet_day', 'u1'] },
+  { id: 'u1s2', bxr: 'Мэндээ!', ru: 'Привет!', tags: ['greet_day', 'u1'] },
+  { id: 'u1s3', bxr: 'Үглөөнэй мэндэ!', ru: 'Доброе утро!', tags: ['greet_day', 'u1'] },
+  { id: 'u1s4', bxr: 'Үдэрэй мэндэ!', ru: 'Добрый день!', tags: ['greet_day', 'u1'] },
+  { id: 'u1s5', bxr: 'Үдэшын мэндэ!', ru: 'Добрый вечер!', tags: ['greet_day', 'u1'] },
+  { id: 'u1s6', bxr: 'Ши хэн гэжэ нэрэтэйбши?', ru: 'Как тебя зовут?', tags: ['intro_name', 'u1'] },
+  { id: 'u1s7', bxr: 'Би арбатайб', ru: 'Мне 10 лет', tags: ['intro_age', 'u1'] },
+  { id: 'u1s8', bxr: 'Ши хэдытэйбши?', ru: 'Сколько тебе лет?', tags: ['intro_age', 'u1'] },
+  { id: 'u1s9', bxr: 'Би буряад яһанайб', ru: 'Я по национальности бурят', tags: ['intro_origin', 'u1'] },
+  { id: 'u1s10', bxr: 'Та хаанаһаа ерээбта?', ru: 'Откуда вы приехали?', tags: ['intro_origin', 'u1'] },
+  { id: 'u1s11', bxr: 'Би ехэ баяртай байнаб', ru: 'Я очень рад', tags: ['intro_origin', 'u1'] },
+  { id: 'u1s12', bxr: 'Хүлисэгты', ru: 'Извините', tags: ['greet_day', 'u1'] },
 ]

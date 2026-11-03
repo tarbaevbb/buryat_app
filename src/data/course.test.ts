@@ -101,7 +101,8 @@ describe('exerciseVocabIds', () => {
   })
 
   it('для сборки предложения находит слова из словаря', () => {
-    const build = generateExercises('u1l4').find((e) => e.kind === 'build')
+    // u2l2 — урок чтения: предложения собраны из слов, которые есть в словаре.
+    const build = generateExercises('u2l2').find((e) => e.kind === 'build')
     expect(build).toBeDefined()
     if (build) {
       const ids = exerciseVocabIds(build)

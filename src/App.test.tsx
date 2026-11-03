@@ -20,15 +20,15 @@ describe('App', () => {
   it('рендерит карту обучения на главной', () => {
     renderAt('/')
     expect(screen.getByText('Буряад хэлэн')).toBeTruthy()
-    expect(screen.getByText('Чтение и первые слова')).toBeTruthy()
+    expect(screen.getByText('Знакомство')).toBeTruthy()
     expect(screen.getByText('Учиться')).toBeTruthy()
   })
 
   it('показывает все пять разделов курса', () => {
     renderAt('/')
     for (const title of [
-      'Чтение и первые слова',
-      'Приветствия',
+      'Знакомство',
+      'Слова и чтение',
       'Числа и время',
       'Семья и люди',
       'Еда и быт',

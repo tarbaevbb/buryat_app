@@ -101,9 +101,21 @@ function buildSentenceTask(
 ): BuildExercise | null {
   const sentence = getSentence(sentenceId)
   if (!sentence) return null
-  const extraPool = vocabPool
-    .filter((v) => v.pos !== 'phrase' && v.pos !== 'sound')
-    .map((v) => v.bxr)
+  // Односложную фразу собирать не из чего: получилась бы «сборка» из одной
+  // плитки среди дистракторов. Такие фразы отрабатываются выбором перевода.
+  if (sentence.bxr.split(/\s+/).filter(Boolean).length < 2) return null
+  const singleWords = (items: VocabItem[]) =>
+    items
+      .filter((v) => v.pos !== 'phrase' && v.pos !== 'sound' && v.pos !== 'letter')
+      .map((v) => v.bxr)
+
+  const lessonWords = singleWords(vocabPool)
+  // Урок из одних фраз («Знакомство») своих слов для дистракторов не имеет.
+  // Тогда берём их из всего курса — иначе плиток было бы ровно по числу слов
+  // ответа и задание «собери предложение» превращалось бы в перестановку двух.
+  const extraPool =
+    lessonWords.length >= 3 ? lessonWords : singleWords([...course.vocab.values()])
+
   return {
     kind: 'build',
     id: `build:${sentence.id}`,
