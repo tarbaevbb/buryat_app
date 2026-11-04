@@ -17,17 +17,12 @@ const allSentences: SentenceItem[] = [
 const vocabById = new Map(allVocab.map((v) => [v.id, v]))
 const sentenceById = new Map(allSentences.map((s) => [s.id, s]))
 
-/** Собирает id слов по тегам (объединение). */
-function byTags(tags: string[]): string[] {
-  return allVocab.filter((v) => tags.some((t) => v.tags.includes(t))).map((v) => v.id)
-}
-
 interface LessonSpec {
   id: string
   title: string
   titleBxr: string
   kind?: 'lesson' | 'review'
-  tags: string[]
+  vocabIds: string[]
   sentenceIds?: string[]
 }
 
@@ -43,7 +38,8 @@ interface UnitSpec {
 }
 
 /**
- * 5 разделов по 5 уроков. Каждый урок — набор слов (по тегам) + предложения.
+ * 5 разделов по 5 уроков. Лексика каждого урока задана явно, чтобы общие
+ * тематические теги не переносили слова между разными уроками.
  * Последний урок раздела — повторение: слова всего раздела без новых.
  */
 const unitSpecs: UnitSpec[] = [
@@ -60,33 +56,33 @@ const unitSpecs: UnitSpec[] = [
         id: 'u1l1',
         title: 'Приветствия',
         titleBxr: 'Мэндээлгэ',
-        tags: ['greet_day'],
+        vocabIds: ['sain_baina_greet', 'mendee_greet', 'ugluuney_mende', 'uderey_mende', 'udesyn_mende', 'khulisegty', 'bayarla', 'bayartai', 'honin_yuun_be'],
         sentenceIds: ['u1s1', 'u1s2', 'u1s3', 'u1s4', 'u1s5', 'u1s12'],
       },
-      { id: 'u1l2', title: 'Как вас зовут', titleBxr: 'Нэрэ', tags: ['intro_name'], sentenceIds: ['u1s6'] },
-      { id: 'u1l3', title: 'Сколько лет', titleBxr: 'Наһан', tags: ['intro_age'], sentenceIds: ['u1s7', 'u1s8'] },
+      { id: 'u1l2', title: 'Как вас зовут', titleBxr: 'Нэрэ', vocabIds: ['minii_nere', 'famili_mini', 'obogtoib', 'shii_khen_nereteibshi', 'shii_khen_famili', 'khen_obogtoibshi', 'neree_khelys', 'neree_beshegdedeg', 'nereer_duudakha', 'nere'], sentenceIds: ['u1s6'] },
+      { id: 'u1l3', title: 'Возраст и дата рождения', titleBxr: 'Наһан', vocabIds: ['shii_khedyteibshi', 'bi_arbataib', 'ta_nahaa_khusenkhei', 'bi_usheo', 'ta_khezee_turoobta', 'bi_2002', 'turehen_uderi', 'bi', 'shi', 'ta'], sentenceIds: ['u1s7', 'u1s8'] },
       {
         id: 'u1l4',
         title: 'Откуда вы',
         titleBxr: 'Хаанаһаа',
-        tags: ['intro_origin'],
+        vocabIds: ['ta_khaanahaa', 'ta_khaanakhibta', 'ta_yamar_yahanaipta', 'bi_buryaad', 'bi_orod', 'tanilhan_bayartai', 'yaazha_uulzaba', 'holiin_turel', 'turel_beshe'],
         sentenceIds: ['u1s9', 'u1s10', 'u1s11'],
       },
       {
         id: 'u1l5',
         title: 'Повторение раздела',
-        titleBxr: 'Дахин hанаха',
+        titleBxr: 'Дахин һанаха',
         kind: 'review',
-        tags: ['greet_day', 'intro_name', 'intro_age', 'intro_origin'],
+        vocabIds: ['sain_baina_greet', 'mendee_greet', 'ugluuney_mende', 'uderey_mende', 'udesyn_mende', 'khulisegty', 'bayarla', 'bayartai', 'honin_yuun_be', 'minii_nere', 'famili_mini', 'obogtoib', 'shii_khen_nereteibshi', 'shii_khen_famili', 'khen_obogtoibshi', 'neree_khelys', 'neree_beshegdedeg', 'nereer_duudakha', 'nere', 'shii_khedyteibshi', 'bi_arbataib', 'ta_nahaa_khusenkhei', 'bi_usheo', 'ta_khezee_turoobta', 'bi_2002', 'turehen_uderi', 'bi', 'shi', 'ta', 'ta_khaanahaa', 'ta_khaanakhibta', 'ta_yamar_yahanaipta', 'bi_buryaad', 'bi_orod', 'tanilhan_bayartai', 'yaazha_uulzaba', 'holiin_turel', 'turel_beshe'],
         sentenceIds: ['u1s1', 'u1s3', 'u1s7', 'u1s9'],
       },
     ],
   },
   {
     id: 'u2',
-    title: 'Слова и чтение',
+    title: 'Первые слова',
     titleBxr: 'Үгэ ба уншалга',
-    description: 'Звуки ө, ү, һ, дифтонги, первые слова, вежливые слова и вопросы.',
+    description: 'Базовые слова с особыми буквами, цвета, частые выражения и вопросы.',
     color: '#1cb0f6',
     colorShadow: '#1899d6',
     emoji: '🔤',
@@ -95,37 +91,37 @@ const unitSpecs: UnitSpec[] = [
       // «звуков» отдельными карточками — иначе задания получаются тавтологичными.
       {
         id: 'u2l1',
-        title: 'Звуки ө, ү, һ',
+        title: 'Слова с буквами ө, ү, һ',
         titleBxr: 'Ө, ү, һ',
-        tags: ['vowel_oe', 'sound_h'],
+        vocabIds: ['hun', 'ughe', 'uzeg', 'huen', 'usun', 'hain'],
         sentenceIds: ['u2s6'],
       },
       {
         id: 'u2l2',
-        title: 'Дифтонги и чтение',
-        titleBxr: 'Дифтонгүүд',
-        tags: ['diphthong', 'reading'],
-        sentenceIds: ['u2s1', 'u2s2', 'u2s3', 'u2s4', 'u2s5'],
+        title: 'Первые простые слова',
+        titleBxr: 'Түрүүшын үгэнүүд',
+        vocabIds: ['sai', 'noho', 'ger', 'morin', 'nom', 'khelen', 'naran', 'modon'],
+        sentenceIds: ['u2s1', 'u2s2'],
       },
       {
         id: 'u2l3',
-        title: 'Вежливые слова',
-        titleBxr: 'Хүндэтэ үгэнүүд',
-        tags: ['polite'],
+        title: 'Частые слова и цвета',
+        titleBxr: 'Үнгэнүүд ба хэрэгтэй үгэнүүд',
+        vocabIds: ['sain', 'baina', 'tiim', 'ugui', 'muu', 'daa', 'ehe', 'khara', 'sagaan', 'ulaan', 'nogoon', 'shara'],
       },
       {
         id: 'u2l4',
         title: 'Вопросы',
         titleBxr: 'Асуудал',
-        tags: ['question', 'school', 'home'],
+        vocabIds: ['khen_be', 'yamar', 'khaana', 'hedi', 'yuu', 'ene', 'tere', 'medene', 'bish', 'bagsha', 'huragshan', 'geree', 'talha', 'buga', 'yabaha', 'uuha', 'edikhe'],
         sentenceIds: ['u2s7', 'u2s8'],
       },
       {
         id: 'u2l5',
         title: 'Повторение раздела',
-        titleBxr: 'Дахин hанаха',
+        titleBxr: 'Дахин һанаха',
         kind: 'review',
-        tags: ['vowel_oe', 'sound_h', 'diphthong', 'reading', 'polite', 'question', 'school', 'home'],
+        vocabIds: ['hun', 'ughe', 'uzeg', 'huen', 'usun', 'hain', 'sai', 'noho', 'ger', 'morin', 'nom', 'khelen', 'naran', 'modon', 'ehe', 'khara', 'sagaan', 'ulaan', 'nogoon', 'shara', 'talha', 'buga', 'yabaha', 'uuha', 'edikhe', 'sain', 'baina', 'tiim', 'ugui', 'muu', 'daa', 'khen_be', 'yamar', 'khaana', 'hedi', 'yuu', 'ene', 'tere', 'medene', 'bish', 'bagsha', 'huragshan', 'geree'],
         sentenceIds: ['u2s1', 'u2s5', 'u2s6', 'u2s7'],
       },
     ],
@@ -139,17 +135,17 @@ const unitSpecs: UnitSpec[] = [
     colorShadow: '#e07f00',
     emoji: '🔢',
     lessons: [
-      { id: 'u3l1', title: 'От 1 до 10', titleBxr: 'Нэгэнhээ арба', tags: ['num1_10'], sentenceIds: ['u3s1', 'u3s6'] },
-      { id: 'u3l2', title: 'Десятки до 100', titleBxr: 'Арбанай тоонууд', tags: ['num10_100'], sentenceIds: ['u3s2'] },
-      { id: 'u3l3', title: 'Дни недели', titleBxr: 'Гарагууд', tags: ['weekday'], sentenceIds: ['u3s5'] },
-      { id: 'u3l4', title: 'Который час', titleBxr: 'Хэдэн саг бэ', tags: ['time'], sentenceIds: ['u3s3', 'u3s4'] },
+      { id: 'u3l1', title: 'От 1 до 10', titleBxr: 'Нэгэнһээ арба', vocabIds: ['neg', 'khoyor', 'gurba', 'durbe', 'taba', 'zurgaa', 'dolo', 'naima', 'yuhen', 'arba'], sentenceIds: ['u3s1', 'u3s6'] },
+      { id: 'u3l2', title: 'Десятки до 100', titleBxr: 'Арбанай тоонууд', vocabIds: ['khori', 'guchi', 'dushi', 'tabi', 'zhara', 'dala', 'naya', 'yere', 'zuu'], sentenceIds: ['u3s2'] },
+      { id: 'u3l3', title: 'Дни недели', titleBxr: 'Долоон хоногой гарагууд', vocabIds: ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7'], sentenceIds: ['u3s5'] },
+      { id: 'u3l4', title: 'Который час', titleBxr: 'Хэдэн саг бэ', vocabIds: ['sag', 'ude', 'honog', 'odo', 'ugloo', 'naima'], sentenceIds: ['u3s3', 'u3s4'] },
       {
         id: 'u3l5',
         title: 'Повторение раздела',
-        titleBxr: 'Дахин hанаха',
+        titleBxr: 'Дахин һанаха',
         kind: 'review',
-        tags: ['number', 'time'],
-        sentenceIds: ['u3s1', 'u3s2', 'u3s4'],
+        vocabIds: ['neg', 'khoyor', 'gurba', 'durbe', 'taba', 'zurgaa', 'dolo', 'naima', 'yuhen', 'arba', 'khori', 'guchi', 'dushi', 'tabi', 'zhara', 'dala', 'naya', 'yere', 'zuu', 'd1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'sag', 'ude', 'honi', 'honog', 'odo', 'ugloo'],
+        sentenceIds: ['u3s1', 'u3s3', 'u3s4', 'u3s5'],
       },
     ],
   },
@@ -157,22 +153,22 @@ const unitSpecs: UnitSpec[] = [
     id: 'u4',
     title: 'Семья и люди',
     titleBxr: 'Бүлэ',
-    description: 'Родственники, возраст, «у меня есть».',
+    description: 'Родственные термины, семья, описание людей и занятий.',
     color: '#ce82ff',
     colorShadow: '#b566e6',
     emoji: '👨‍👩‍👧',
     lessons: [
-      { id: 'u4l1', title: 'Родители', titleBxr: 'Аба эжы', tags: ['family'], sentenceIds: ['u4s1', 'u4s2'] },
-      { id: 'u4l2', title: 'Братья и сёстры', titleBxr: 'Аха дүүнэр', tags: ['family'], sentenceIds: ['u4s4', 'u4s6'] },
-      { id: 'u4l3', title: 'Дети', titleBxr: 'Хүүгэд', tags: ['people', 'age'], sentenceIds: ['u4s3', 'u4s5'] },
-      { id: 'u4l4', title: 'Качества', titleBxr: 'Шэнжэ шанар', tags: ['quality', 'work'], sentenceIds: ['u4s3', 'u4s5'] },
+      { id: 'u4l1', title: 'Родители и семья', titleBxr: 'Аба эжы', vocabIds: ['aba', 'ezhy', 'bule', 'ger_bule', 'naha'], sentenceIds: [] },
+      { id: 'u4l2', title: 'Братья и сёстры', titleBxr: 'Аха дүүнэр', vocabIds: ['aha', 'egeshe', 'duu', 'khoyor_duu', 'nagasa', 'abagai'], sentenceIds: ['u4s6'] },
+      { id: 'u4l3', title: 'Дети и возраст', titleBxr: 'Хүүгэд ба наһан', vocabIds: ['khubun', 'basagan', 'nasta', 'khugshe', 'zaluu'], sentenceIds: ['u4s5'] },
+      { id: 'u4l4', title: 'Люди и занятия', titleBxr: 'Хүнүүд ба ажал', vocabIds: ['uulzaha', 'durakhai', 'khairtai', 'ajil', 'ajilsha', 'baha', 'orda', 'zurag', 'ongoso', 'gar', 'honi'], sentenceIds: [] },
       {
         id: 'u4l5',
         title: 'Повторение раздела',
-        titleBxr: 'Дахин hанаха',
+        titleBxr: 'Дахин һанаха',
         kind: 'review',
-        tags: ['family', 'people'],
-        sentenceIds: ['u4s1', 'u4s3', 'u4s6'],
+        vocabIds: ['aba', 'ezhy', 'aha', 'egeshe', 'duu', 'khubun', 'basagan', 'nagasa', 'abagai', 'khugshe', 'zaluu', 'bule', 'naha', 'nasta', 'khoyor_duu', 'ger_bule', 'uulzaha', 'durakhai', 'khairtai', 'ajil', 'ajilsha', 'baha', 'orda', 'zurag', 'ongoso', 'gar'],
+        sentenceIds: ['u4s6'],
       },
     ],
   },
@@ -185,27 +181,31 @@ const unitSpecs: UnitSpec[] = [
     colorShadow: '#e03c3c',
     emoji: '🍲',
     lessons: [
-      { id: 'u5l1', title: 'Продукты', titleBxr: 'Эдеэнэй бүтээгдэхүүн', tags: ['food'], sentenceIds: ['u5s1', 'u5s6'] },
-      { id: 'u5l2', title: 'Напитки', titleBxr: 'Ундаанууд', tags: ['drink', 'food'], sentenceIds: ['u5s2'] },
-      { id: 'u5l3', title: 'Дом и посуда', titleBxr: 'Гэр ба саба', tags: ['home', 'dish', 'furniture'], sentenceIds: ['u5s3', 'u5s5'] },
-      { id: 'u5l4', title: 'Вкусно!', titleBxr: 'Амтатай!', tags: ['food', 'quality'], sentenceIds: ['u5s4', 'u5s6'] },
+      { id: 'u5l1', title: 'Продукты', titleBxr: 'Эдеэнэй зүйлнүүд', vocabIds: ['idehen', 'buuda', 'budaa', 'malhan', 'zagahan', 'tohon', 'dahan'], sentenceIds: ['u5s6'] },
+      { id: 'u5l2', title: 'Напитки и традиционные продукты', titleBxr: 'Ундаан ба сагаан эдеэн', vocabIds: ['sagaan_idehen', 'airag', 'buhler', 'sai_zu', 'zurkhai', 'uugaa', 'sai', 'huen', 'idehen'], sentenceIds: [] },
+      { id: 'u5l3', title: 'Дом и посуда', titleBxr: 'Гэр ба саба', vocabIds: ['tulga', 'ayaga', 'saba', 'shere', 'oron', 'nomoi_san', 'uden', 'sonho', 'gazar', 'khana'], sentenceIds: ['u5s3'] },
+      { id: 'u5l4', title: 'Вкус и описание', titleBxr: 'Амтан ба шанар', vocabIds: ['amta', 'haikhan', 'hari', 'sain', 'muu', 'ehe', 'khara', 'sagaan', 'ulaan', 'nogoon', 'shara'], sentenceIds: [] },
       {
         id: 'u5l5',
         title: 'Повторение раздела',
-        titleBxr: 'Дахин hанаха',
+        titleBxr: 'Дахин һанаха',
         kind: 'review',
-        tags: ['food', 'home', 'drink'],
+        vocabIds: ['idehen', 'buuda', 'tulga', 'budaa', 'malhan', 'zagahan', 'tohon', 'dahan', 'sagaan_idehen', 'airag', 'buhler', 'sai_zu', 'zurkhai', 'ayaga', 'saba', 'shere', 'oron', 'nomoi_san', 'uden', 'sonho', 'gazar', 'amta', 'haikhan', 'hari', 'uugaa', 'khana'],
         sentenceIds: ['u5s1', 'u5s3', 'u5s6'],
       },
     ],
   },
 ]
 
-function buildUnit(spec: UnitSpec): { unit: Unit; lessons: Lesson[] } {
-  const unitVocab = byTags(spec.lessons.flatMap((l) => l.tags))
+const alreadyIntroducedVocab = new Set<string>()
 
+function buildUnit(spec: UnitSpec): { unit: Unit; lessons: Lesson[] } {
   const lessons: Lesson[] = spec.lessons.map((l, index) => {
-    const vocabIds = byTags(l.tags)
+    const availableIds = l.vocabIds.filter((id) => Boolean(vocabById.get(id) && !vocabById.get(id)?.needsReview))
+    const newVocabIds = l.kind === 'review'
+      ? []
+      : availableIds.filter((id) => !alreadyIntroducedVocab.has(id))
+    newVocabIds.forEach((id) => alreadyIntroducedVocab.add(id))
     return {
       id: l.id,
       unitId: spec.id,
@@ -213,9 +213,10 @@ function buildUnit(spec: UnitSpec): { unit: Unit; lessons: Lesson[] } {
       title: l.title,
       titleBxr: l.titleBxr,
       kind: l.kind ?? 'lesson',
-      vocabIds,
+      // Сомнительные единицы не попадают в обучение и повторение до проверки.
+      vocabIds: availableIds,
       // В уроке «повторение» новой лексики нет — всё уже встречалось в разделе.
-      newVocabIds: l.kind === 'review' ? [] : vocabIds,
+      newVocabIds,
       sentenceIds: l.sentenceIds ?? [],
     }
   })
@@ -232,7 +233,6 @@ function buildUnit(spec: UnitSpec): { unit: Unit; lessons: Lesson[] } {
     lessonIds: lessons.map((l) => l.id),
   }
 
-  void unitVocab
   return { unit, lessons }
 }
 

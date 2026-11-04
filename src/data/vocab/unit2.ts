@@ -6,9 +6,8 @@ import type { VocabItem } from '../types'
  * Здесь живут звуки (ө, ү, һ, дифтонги) и первые слова, а также вежливые
  * слова и вопросы — то, что не вошло в раздел «Танилсалга».
  *
- * Теги только «учебные». Служебные темы (food, home, animal…) не ставятся
- * намеренно: `byTags()` собирает слова по всему курсу, и общий тег утащил бы
- * слово в чужой раздел.
+ * Теги описывают тематику слов. Состав уроков задаётся явно в course.ts,
+ * чтобы тематические пересечения не переносили слова в чужой урок.
  */
 export const unit2: VocabItem[] = [
   // --- Звуки ө, ү ---
@@ -18,8 +17,8 @@ export const unit2: VocabItem[] = [
   { id: 'huen', bxr: 'һүн', ru: 'молоко', transcription: 'һүн', pos: 'noun', tags: ['reading', 'vowel_oe', 'sound_h'], note: 'сүү — вариант написания' },
 
   // --- Звук һ ---
-  { id: 'usun', bxr: 'уһан', ru: 'вода', transcription: 'уhан', pos: 'noun', tags: ['reading', 'sound_h'] },
-  { id: 'hain', bxr: 'һайн', ru: 'хороший', transcription: 'hайн', pos: 'adj', tags: ['reading', 'sound_h', 'diphthong'] },
+  { id: 'usun', bxr: 'уһан', ru: 'вода', transcription: 'уһан', pos: 'noun', tags: ['reading', 'sound_h'] },
+  { id: 'hain', bxr: 'һайн', ru: 'хороший', transcription: 'һайн', pos: 'adj', tags: ['reading', 'sound_h', 'diphthong'] },
 
   // --- Дифтонги ---
   { id: 'sai', bxr: 'сай', ru: 'чай', transcription: 'сай', pos: 'noun', tags: ['reading', 'diphthong'] },
@@ -63,7 +62,7 @@ export const unit2: VocabItem[] = [
   { id: 'medene', bxr: 'мэдэнэ', ru: 'знает', pos: 'verb', tags: ['question'], transcription: 'мэдэнэ' },
   { id: 'bish', bxr: 'бэшэ', ru: 'не (отрицание)', pos: 'phrase', tags: ['question'], transcription: 'бэшэ' },
   { id: 'bagsha', bxr: 'багша', ru: 'учитель', pos: 'noun', tags: ['question', 'school'], transcription: 'багша' },
-  { id: 'huragshan', bxr: 'hурагша', ru: 'ученик', pos: 'noun', tags: ['question', 'school'], transcription: 'hурагша' },
+  { id: 'huragshan', bxr: 'һурагша', ru: 'ученик', pos: 'noun', tags: ['question', 'school'], transcription: 'һурагша' },
   { id: 'geree', bxr: 'гэртээ', ru: 'дома', pos: 'adv', tags: ['question', 'home'], transcription: 'гэртээ' },
 ]
 

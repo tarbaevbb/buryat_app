@@ -9,16 +9,9 @@ import type {
   VocabItem,
 } from './types'
 
-/** Пул кандидатов в дистракторы: сначала слова того же урока, потом весь курс. */
+/** Для дистракторов используем только лексику текущего урока. */
 function distractorPool(lessonVocab: VocabItem[], pos: VocabItem['pos']): VocabItem[] {
-  const samePos = lessonVocab.filter((v) => v.pos === pos)
-  const globalSamePos = [...course.vocab.values()].filter((v) => v.pos === pos)
-  const seen = new Set<string>()
-  return [...samePos, ...globalSamePos].filter((v) => {
-    if (seen.has(v.id)) return false
-    seen.add(v.id)
-    return true
-  })
+  return lessonVocab.filter((v) => v.pos === pos && !v.needsReview)
 }
 
 function buildSelect(
@@ -37,8 +30,9 @@ function buildSelect(
     seen.add(key)
     return true
   })
-  if (pool.length < optionsCount - 1) return null
-  const wrong = shuffle(pool, rng).slice(0, optionsCount - 1)
+  const count = Math.min(optionsCount, pool.length + 1)
+  if (count < 3) return null
+  const wrong = shuffle(pool, rng).slice(0, count - 1)
   const all = shuffle([vocab, ...wrong], rng)
   return {
     kind: 'select',
@@ -117,7 +111,7 @@ function buildSentenceTask(
   vocabPool: VocabItem[],
 ): BuildExercise | null {
   const sentence = getSentence(sentenceId)
-  if (!sentence) return null
+  if (!sentence || sentence.needsReview) return null
   // Односложную фразу собирать не из чего: получилась бы «сборка» из одной
   // плитки среди дистракторов. Такие фразы отрабатываются выбором перевода.
   if (sentence.bxr.split(/\s+/).filter(Boolean).length < 2) return null
@@ -127,11 +121,9 @@ function buildSentenceTask(
       .map((v) => v.bxr)
 
   const lessonWords = singleWords(vocabPool)
-  // Урок из одних фраз («Знакомство») своих слов для дистракторов не имеет.
-  // Тогда берём их из всего курса — иначе плиток было бы ровно по числу слов
-  // ответа и задание «собери предложение» превращалось бы в перестановку двух.
-  const extraPool =
-    lessonWords.length >= 3 ? lessonWords : singleWords([...course.vocab.values()])
+  // Не подмешиваем лексику из других тем: случайные слова превращают перевод
+  // в угадывание среди незнакомых и грамматически несвязанных плиток.
+  if (lessonWords.length < 3) return null
 
   return {
     kind: 'build',
@@ -139,7 +131,7 @@ function buildSentenceTask(
     promptLang: 'ru',
     prompt: sentence.ru,
     answer: sentence.bxr,
-    tokens: buildTiles(sentence.bxr, rng, extraPool),
+    tokens: buildTiles(sentence.bxr, rng, lessonWords),
     sentenceId: sentence.id,
   }
 }
@@ -150,7 +142,7 @@ function buildMatch(rng: () => number, vocab: VocabItem[], size = 5): MatchExerc
   const usable = vocab.filter((v) => {
     const bxr = normalize(v.bxr)
     const ru = normalize(v.ru)
-    if (v.pos === 'sound' || v.pos === 'letter' || v.ru.length >= 30) return false
+    if (v.needsReview || v.pos === 'sound' || v.pos === 'letter' || v.ru.length >= 30) return false
     if (seenBxr.has(bxr) || seenRu.has(ru)) return false
     seenBxr.add(bxr)
     seenRu.add(ru)
@@ -174,7 +166,7 @@ export function generateExercises(lessonId: string, target = 10): Exercise[] {
   const rng = makeRng(hashString(lessonId))
   const vocab = lesson.vocabIds
     .map((id) => getVocab(id))
-    .filter((v): v is VocabItem => Boolean(v))
+    .filter((v): v is VocabItem => Boolean(v && !v.needsReview))
   if (vocab.length === 0) return []
 
   const exercises: Exercise[] = []
@@ -206,9 +198,17 @@ export function generateExercises(lessonId: string, target = 10): Exercise[] {
   // 4. Добираем выбором перевода в обратную сторону (ru → bxr).
   for (const item of ordered) {
     if (exercises.length >= target - 1) break
-    const pool = distractorPool(vocab, item.pos).filter((o) => o.bxr !== item.bxr)
-    if (pool.length < 3) continue
-    const wrong = shuffle(pool, rng).slice(0, 3)
+    const answerKey = normalize(item.bxr)
+    const seen = new Set([answerKey])
+    const pool = distractorPool(vocab, item.pos).filter((o) => {
+      const key = normalize(o.bxr)
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    const count = Math.min(4, pool.length + 1)
+    if (count < 3) continue
+    const wrong = shuffle(pool, rng).slice(0, count - 1)
     const options = shuffle([item, ...wrong], rng).map((o) => o.bxr)
     exercises.push({
       kind: 'select',
@@ -224,7 +224,7 @@ export function generateExercises(lessonId: string, target = 10): Exercise[] {
 
   // 5. Завершаем сопоставлением пар.
   const match = buildMatch(rng, vocab)
-  if (match) exercises.push(match)
+  if (match && exercises.length < target) exercises.push(match)
 
   // Перемешиваем, но первое задание оставляем «выбор перевода» — мягкий вход.
   const [first, ...rest] = exercises
