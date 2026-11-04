@@ -27,7 +27,16 @@ function buildSelect(
   options: VocabItem[],
   optionsCount = 4,
 ): SelectExercise | null {
-  const pool = options.filter((o) => o.id !== vocab.id && o.ru !== vocab.ru)
+  // Не показываем одинаковые переводы под разными карточками. Иначе в
+  // упражнении могут оказаться два фактически правильных ответа.
+  const answerKey = normalize(vocab.ru)
+  const seen = new Set([answerKey])
+  const pool = options.filter((o) => {
+    const key = normalize(o.ru)
+    if (o.id === vocab.id || seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
   if (pool.length < optionsCount - 1) return null
   const wrong = shuffle(pool, rng).slice(0, optionsCount - 1)
   const all = shuffle([vocab, ...wrong], rng)
@@ -53,7 +62,15 @@ function buildReading(
   // Транскрипция совпадает с написанием (хүн → хүн): задание бессмысленно —
   // вопрос и ответ одинаковы, сравнивать нечего.
   if (normalize(vocab.transcription) === normalize(vocab.bxr)) return null
-  const candidates = pool.filter((v) => v.transcription && v.transcription !== vocab.transcription)
+  const answerKey = normalize(vocab.transcription)
+  const seen = new Set([answerKey])
+  const candidates = pool.filter((v) => {
+    if (!v.transcription) return false
+    const key = normalize(v.transcription)
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
   if (candidates.length < 2) return null
   const wrong = shuffle(candidates, rng).slice(0, 2)
   const all = shuffle([vocab, ...wrong], rng)
@@ -128,7 +145,17 @@ function buildSentenceTask(
 }
 
 function buildMatch(rng: () => number, vocab: VocabItem[], size = 5): MatchExercise | null {
-  const usable = vocab.filter((v) => v.pos !== 'sound' && v.pos !== 'letter' && v.ru.length < 30)
+  const seenBxr = new Set<string>()
+  const seenRu = new Set<string>()
+  const usable = vocab.filter((v) => {
+    const bxr = normalize(v.bxr)
+    const ru = normalize(v.ru)
+    if (v.pos === 'sound' || v.pos === 'letter' || v.ru.length >= 30) return false
+    if (seenBxr.has(bxr) || seenRu.has(ru)) return false
+    seenBxr.add(bxr)
+    seenRu.add(ru)
+    return true
+  })
   if (usable.length < 3) return null
   const pairs = shuffle(usable, rng)
     .slice(0, Math.min(size, usable.length))
