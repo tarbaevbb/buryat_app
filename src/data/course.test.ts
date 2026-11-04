@@ -73,8 +73,8 @@ describe('генерация упражнений', () => {
   })
 
   it('набор стабилен между вызовами', () => {
-    const a = generateExercises('u1l4').map((e) => e.id)
-    const b = generateExercises('u1l4').map((e) => e.id)
+    const a = generateExercises('u3l4').map((e) => e.id)
+    const b = generateExercises('u3l4').map((e) => e.id)
     expect(a).toEqual(b)
   })
 
@@ -86,7 +86,7 @@ describe('генерация упражнений', () => {
 
 describe('exerciseVocabIds', () => {
   it('для выбора возвращает слово задания', () => {
-    const select = generateExercises('u2l1').find((e) => e.kind === 'select')
+    const select = generateExercises('u1l1').find((e) => e.kind === 'select')
     expect(select).toBeDefined()
     if (select?.kind === 'select') {
       expect(exerciseVocabIds(select)).toEqual([select.vocabId])
@@ -94,15 +94,15 @@ describe('exerciseVocabIds', () => {
   })
 
   it('для сопоставления возвращает все пары', () => {
-    const match = generateExercises('u1l4').find((e) => e.kind === 'match')
+    const match = generateExercises('u3l4').find((e) => e.kind === 'match')
     if (match?.kind === 'match') {
       expect(exerciseVocabIds(match)).toHaveLength(match.pairs.length)
     }
   })
 
   it('для сборки предложения находит слова из словаря', () => {
-    // u2l2 — урок чтения: предложения собраны из слов, которые есть в словаре.
-    const build = generateExercises('u2l2').find((e) => e.kind === 'build')
+    // u1l2 — урок чтения: предложения собраны из слов, которые есть в словаре.
+    const build = generateExercises('u1l2').find((e) => e.kind === 'build')
     expect(build).toBeDefined()
     if (build) {
       const ids = exerciseVocabIds(build)

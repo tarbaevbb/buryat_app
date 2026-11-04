@@ -46,7 +46,7 @@ describe('точность урока', () => {
   })
 
   it('идеальный урок даёт 100% точности', () => {
-    playLesson('u1l1', () => false)
+    playLesson('u3l1', () => false)
     const s = useProgress.getState()
     expect(s.totalMistakes).toBe(0)
     expect(s.totalExercises).toBeGreaterThan(0)
@@ -54,7 +54,7 @@ describe('точность урока', () => {
   })
 
   it('одна ошибка портит ровно одно задание', () => {
-    const { summary } = playLesson('u2l1', (_ex, i) => i === 0)
+    const { summary } = playLesson('u1l1', (_ex, i) => i === 0)
     const s = useProgress.getState()
     expect(s.totalMistakes).toBe(1)
     expect(s.totalExercises).toBe(summary.total)
@@ -64,7 +64,7 @@ describe('точность урока', () => {
   })
 
   it('сердца не уходят в минус при множестве ошибок', () => {
-    const { summary } = playLesson('u3l1', () => true)
+    const { summary } = playLesson('u2l1', () => true)
     // Каждое задание закрыто с ошибкой — минус одно сердце за задание.
     expect(useProgress.getState().hearts).toBe(Math.max(0, MAX_HEARTS - summary.total))
     expect(useProgress.getState().hearts).toBeGreaterThanOrEqual(0)

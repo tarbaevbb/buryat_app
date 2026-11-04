@@ -62,10 +62,10 @@ describe('cloud: лидерборд', () => {
 describe('cloud: награды', () => {
   it('читает ответ fn_award_lesson (массив из строки)', async () => {
     handler = () => ({ data: [{ xp: 15, streak: 4, total_xp: 315 }], error: null })
-    const res = await cloud.awardLessonRemote('u1l1', 100, 100)
+    const res = await cloud.awardLessonRemote('u3l1', 100, 100)
     expect(calls[0]).toEqual({
       fn: 'fn_award_lesson',
-      args: { p_lesson_id: 'u1l1', p_score: 100, p_accuracy: 100 },
+      args: { p_lesson_id: 'u3l1', p_score: 100, p_accuracy: 100 },
     })
     expect(res).toEqual({ xp: 15, streak: 4, totalXp: 315 })
   })
@@ -79,7 +79,7 @@ describe('cloud: награды', () => {
 
   it('терпит ответ-объект вместо массива', async () => {
     handler = () => ({ data: { xp: 7, streak: 1, total_xp: 7 }, error: null })
-    const res = await cloud.awardLessonRemote('u1l1', 50, 40)
+    const res = await cloud.awardLessonRemote('u3l1', 50, 40)
     expect(res?.xp).toBe(7)
   })
 
@@ -98,7 +98,7 @@ describe('cloud: снимок прогресса', () => {
     streak: 9,
     lastActiveDay: '2026-05-05',
     lessons: [
-      { lessonId: 'u1l1', score: 95, accuracy: 90, xp: 22, completedAt: 1000 },
+      { lessonId: 'u3l1', score: 95, accuracy: 90, xp: 22, completedAt: 1000 },
       { lessonId: '', score: 10, accuracy: 10, xp: 1 }, // мусор — должен отфильтроваться
     ],
     dailyXp: { '2026-05-05': 22 },
@@ -110,9 +110,9 @@ describe('cloud: снимок прогресса', () => {
     const snap = await cloud.fetchRemoteProgress()
     expect(snap?.xp).toBe(300)
     expect(snap?.hearts).toBe(4)
-    expect(snap?.lessons.u1l1.score).toBe(95)
+    expect(snap?.lessons.u3l1.score).toBe(95)
     // Пустой lessonId отброшен.
-    expect(Object.keys(snap?.lessons ?? {})).toEqual(['u1l1'])
+    expect(Object.keys(snap?.lessons ?? {})).toEqual(['u3l1'])
     expect(snap?.wordStats.ger).toEqual({ errors: 2, seen: 3, lastErrorAt: 500 })
     expect(snap?.dailyXp['2026-05-05']).toBe(22)
   })
@@ -143,13 +143,13 @@ describe('cloud: снимок прогресса', () => {
     const snapshot = {
       ...emptySnapshot(),
       xp: 42,
-      lessons: { u1l1: { lessonId: 'u1l1', score: 80, accuracy: 75, xp: 18, completedAt: 5 } },
+      lessons: { u3l1: { lessonId: 'u3l1', score: 80, accuracy: 75, xp: 18, completedAt: 5 } },
     }
     await cloud.pushProgress(snapshot)
 
     const args = calls[0].args.payload as Record<string, unknown>
     expect(Array.isArray(args.lessons)).toBe(true)
-    expect((args.lessons as unknown[])[0]).toMatchObject({ lessonId: 'u1l1', score: 80 })
+    expect((args.lessons as unknown[])[0]).toMatchObject({ lessonId: 'u3l1', score: 80 })
     // completedAt и xp на сервере не нужны — награду считает он сам.
     expect((args.lessons as Record<string, unknown>[])[0]).not.toHaveProperty('completedAt')
     expect((args.lessons as Record<string, unknown>[])[0]).not.toHaveProperty('xp')

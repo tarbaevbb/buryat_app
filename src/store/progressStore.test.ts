@@ -16,18 +16,18 @@ describe('progressStore', () => {
   beforeEach(reset)
 
   it('начисляет XP и серию за урок', () => {
-    useProgress.getState().awardLesson({ lessonId: 'u1l1', score: 100, accuracy: 100, xp: 18 })
+    useProgress.getState().awardLesson({ lessonId: 'u3l1', score: 100, accuracy: 100, xp: 18 })
     const s = useProgress.getState()
     expect(s.xp).toBe(18)
     expect(s.streak).toBe(1)
-    expect(s.lessons['u1l1'].score).toBe(100)
+    expect(s.lessons['u3l1'].score).toBe(100)
   })
 
   it('хранит лучший результат урока, а XP суммирует', () => {
     const { awardLesson } = useProgress.getState()
-    awardLesson({ lessonId: 'u1l1', score: 50, accuracy: 40, xp: 10 })
-    awardLesson({ lessonId: 'u1l1', score: 80, accuracy: 60, xp: 12 })
-    const lesson = useProgress.getState().lessons['u1l1']
+    awardLesson({ lessonId: 'u3l1', score: 50, accuracy: 40, xp: 10 })
+    awardLesson({ lessonId: 'u3l1', score: 80, accuracy: 60, xp: 12 })
+    const lesson = useProgress.getState().lessons['u3l1']
     expect(lesson.score).toBe(80)
     expect(lesson.accuracy).toBe(60)
     expect(lesson.xp).toBe(22)
@@ -176,13 +176,13 @@ describe('progressStore', () => {
       heartsUpdatedAt: Date.now(),
       streak: 7,
       lastActiveDay: '2026-01-01',
-      lessons: { u2l1: { lessonId: 'u2l1', score: 90, accuracy: 90, xp: 20, completedAt: 1 } },
+      lessons: { u1l1: { lessonId: 'u1l1', score: 90, accuracy: 90, xp: 20, completedAt: 1 } },
       dailyXp: { '2026-01-01': 40 },
       wordStats: { ger: { errors: 1, seen: 2, lastErrorAt: 5 } },
     })
     const s = useProgress.getState()
     expect(s.xp).toBe(500)
-    expect(s.lessons.u2l1.score).toBe(90)
+    expect(s.lessons.u1l1.score).toBe(90)
     expect(s.streak).toBe(7)
   })
 

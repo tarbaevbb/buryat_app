@@ -62,7 +62,7 @@ describe('clearLocal', () => {
 
   it('убирает прогресс предыдущего пользователя', () => {
     const store = useProgress.getState()
-    store.awardLesson({ lessonId: 'u1l1', score: 100, accuracy: 100, xp: 20 })
+    store.awardLesson({ lessonId: 'u3l1', score: 100, accuracy: 100, xp: 20 })
     store.recordWord('ger', false)
     store.setDisplayName('Прошлый игрок')
 
@@ -83,7 +83,7 @@ describe('clearLocal', () => {
 
   it('НЕ помечает облако на удаление', () => {
     useProgress.getState().awardLesson({
-      lessonId: 'u1l1',
+      lessonId: 'u3l1',
       score: 100,
       accuracy: 100,
       xp: 20,

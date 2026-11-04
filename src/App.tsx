@@ -21,7 +21,7 @@ export default function App() {
     if (!displayName && tg?.first_name) setDisplayName(tg.first_name)
   }, [displayName, setDisplayName])
 
-  // Deep link: t.me/<bot>/<app>?startapp=lesson_u1l2
+  // Deep link: t.me/<bot>/<app>?startapp=lesson_u3l2
   useEffect(() => {
     const param = startParam()
     const match = param ? /^lesson_(.+)$/.exec(param) : null

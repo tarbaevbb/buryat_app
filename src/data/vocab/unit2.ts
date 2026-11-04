@@ -1,7 +1,7 @@
 import type { VocabItem } from '../types'
 
 /**
- * Раздел 2. Түрүүшын үгэнүүд — первые слова.
+ * Раздел 1. Түрүүшын үгэнүүд — первые слова.
  *
  * Здесь живут звуки (ө, ү, һ, дифтонги) и первые слова, а также вежливые
  * слова и вопросы — то, что не вошло в раздел «Танилсалга».
@@ -67,12 +67,12 @@ export const unit2: VocabItem[] = [
 ]
 
 export const unit2Sentences = [
-  { id: 'u2s1', bxr: 'Энэ гэр.', ru: 'Это дом.', tags: ['reading', 'u2'] },
-  { id: 'u2s2', bxr: 'Энэ морин.', ru: 'Это лошадь.', tags: ['reading', 'u2'] },
-  { id: 'u2s3', bxr: 'Сайн хүн.', ru: 'Хороший человек.', tags: ['reading', 'u2'], needsReview: true },
-  { id: 'u2s4', bxr: 'Сагаан талха.', ru: 'Белый хлеб.', tags: ['reading', 'u2'] },
-  { id: 'u2s5', bxr: 'Ногоон модон.', ru: 'Зелёное дерево.', tags: ['reading', 'u2'] },
-  { id: 'u2s6', bxr: 'Би уһан уунаб.', ru: 'Я пью воду.', tags: ['reading', 'u2'] },
-  { id: 'u2s7', bxr: 'Энэ хэн бэ?', ru: 'Кто это?', tags: ['question', 'u2'] },
-  { id: 'u2s8', bxr: 'Энэ багша.', ru: 'Это учитель.', tags: ['question', 'u2'] },
+  { id: 'u1s1', bxr: 'Энэ гэр.', ru: 'Это дом.', tags: ['reading', 'u1'] },
+  { id: 'u1s2', bxr: 'Энэ морин.', ru: 'Это лошадь.', tags: ['reading', 'u1'] },
+  { id: 'u1s3', bxr: 'Сайн хүн.', ru: 'Хороший человек.', tags: ['reading', 'u1'], needsReview: true },
+  { id: 'u1s4', bxr: 'Сагаан талха.', ru: 'Белый хлеб.', tags: ['reading', 'u1'] },
+  { id: 'u1s5', bxr: 'Ногоон модон.', ru: 'Зелёное дерево.', tags: ['reading', 'u1'] },
+  { id: 'u1s6', bxr: 'Би уһан уунаб.', ru: 'Я пью воду.', tags: ['reading', 'u1'] },
+  { id: 'u1s7', bxr: 'Энэ хэн бэ?', ru: 'Кто это?', tags: ['question', 'u1'] },
+  { id: 'u1s8', bxr: 'Энэ багша.', ru: 'Это учитель.', tags: ['question', 'u1'] },
 ]

@@ -50,14 +50,14 @@ beforeEach(() => {
 
 describe('flushProgress', () => {
   it('отправляет снимок, когда есть изменения', async () => {
-    useProgress.getState().awardLesson({ lessonId: 'u1l1', score: 100, accuracy: 100, xp: 15 })
+    useProgress.getState().awardLesson({ lessonId: 'u3l1', score: 100, accuracy: 100, xp: 15 })
     const ok = await flushProgress()
     expect(ok).toBe(true)
     expect(calls.some((c) => c.fn === 'fn_push_progress')).toBe(true)
   })
 
   it('не отправляет повторно, если ничего не изменилось', async () => {
-    useProgress.getState().awardLesson({ lessonId: 'u1l1', score: 100, accuracy: 100, xp: 15 })
+    useProgress.getState().awardLesson({ lessonId: 'u3l1', score: 100, accuracy: 100, xp: 15 })
     await flushProgress()
     calls.length = 0
     // Сброс фейкового ответа сервера не меняет локальное состояние.
@@ -68,7 +68,7 @@ describe('flushProgress', () => {
 
   it('сообщает о неудаче, когда сервер недоступен', async () => {
     online = false
-    useProgress.getState().awardLesson({ lessonId: 'u1l1', score: 100, accuracy: 100, xp: 15 })
+    useProgress.getState().awardLesson({ lessonId: 'u3l1', score: 100, accuracy: 100, xp: 15 })
     expect(await flushProgress()).toBe(false)
   })
 
@@ -99,7 +99,7 @@ describe('flushProgress', () => {
 
 describe('resetProgressEverywhere', () => {
   it('чистит локально и в облаке', async () => {
-    useProgress.getState().awardLesson({ lessonId: 'u1l1', score: 100, accuracy: 100, xp: 40 })
+    useProgress.getState().awardLesson({ lessonId: 'u3l1', score: 100, accuracy: 100, xp: 40 })
     useProgress.getState().recordWord('ger', false)
     remoteState = { xp: 40 }
 

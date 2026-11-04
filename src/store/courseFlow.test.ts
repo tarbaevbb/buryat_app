@@ -34,11 +34,11 @@ describe('прохождение курса', () => {
   }
 
   it('первый урок даёт идеальное прохождение и золотую звезду', () => {
-    const summary = completeLesson('u1l1')
+    const summary = completeLesson('u3l1')
     expect(summary.score).toBe(100)
     expect(summary.perfect).toBe(true)
 
-    const result = useProgress.getState().lessons['u1l1']
+    const result = useProgress.getState().lessons['u3l1']
     expect(result.score).toBe(100)
     expect(result.score).toBeGreaterThanOrEqual(95)
   })
@@ -62,12 +62,12 @@ describe('прохождение курса', () => {
   })
 
   it('повторное прохождение не уменьшает лучший результат', () => {
-    completeLesson('u2l1')
-    const best = useProgress.getState().lessons['u2l1'].score
+    completeLesson('u1l1')
+    const best = useProgress.getState().lessons['u1l1'].score
 
     // Второй заход с ошибками.
-    const exercises = generateExercises('u2l1')
-    useSession.getState().start('u2l1', exercises)
+    const exercises = generateExercises('u1l1')
+    useSession.getState().start('u1l1', exercises)
     useSession.getState().submitWrong()
     useSession.getState().submitCorrect([])
     for (let i = 1; i < exercises.length; i += 1) {
@@ -76,18 +76,18 @@ describe('прохождение курса', () => {
     }
     const summary = sessionSummary(useSession.getState())
     useProgress.getState().awardLesson({
-      lessonId: 'u2l1',
+      lessonId: 'u1l1',
       score: summary.score,
       accuracy: summary.accuracy,
       xp: summary.xp,
     })
 
-    expect(useProgress.getState().lessons['u2l1'].score).toBe(best)
+    expect(useProgress.getState().lessons['u1l1'].score).toBe(best)
   })
 
   it('ошибки в уроке уменьшают точность и XP', () => {
-    const exercises = generateExercises('u3l1')
-    useSession.getState().start('u3l1', exercises)
+    const exercises = generateExercises('u2l1')
+    useSession.getState().start('u2l1', exercises)
     for (let i = 0; i < exercises.length; i += 1) {
       if (i === 0) useSession.getState().submitWrong()
       useSession.getState().submitCorrect([])

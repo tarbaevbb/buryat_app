@@ -1,7 +1,7 @@
 import type { VocabItem } from '../types'
 
 /**
- * Раздел 1. Танилсалга — знакомство.
+ * Раздел 3. Танилсалга — знакомство.
  *
  * Содержание взято из тематического списка фраз «Знакомство» (прислан
  * носителем): приветствия по времени суток, имя и фамилия, возраст,
@@ -41,7 +41,8 @@ export const unit1: VocabItem[] = [
   { id: 'ta_nahaa_khusenkhei', bxr: 'Та наһаа хүсэнхэй гүт?', ru: 'Вы совершеннолетний?', pos: 'phrase', tags: ['intro_age'] },
   { id: 'bi_usheo', bxr: 'Үгы, би үшөө наһаяа хүсөөдүйб', ru: 'Нет, я ещё несовершеннолетний', pos: 'phrase', tags: ['intro_age'] },
   { id: 'ta_khezee_turoobta', bxr: 'Та хэзээ түрөөбта?', ru: 'Когда вы родились?', pos: 'phrase', tags: ['intro_age'] },
-  { id: 'bi_2002', bxr: 'Би 2002 оной майн 15-да түрөөб', ru: 'Я родился 15 мая 2002 года', pos: 'phrase', tags: ['intro_age'] },
+  { id: 'bi_july', bxr: 'Би июлиин дүрбэндэ түрэһэнби.', ru: 'Я родился четвертого июля', pos: 'phrase', tags: ['intro_age'] },
+  { id: 'bi_1994', bxr: 'Би арбан юһэн дүшэн дүрбэн ондо түрэһэнби', ru: 'Я родился в тысяча девятьсот девяносто четвёртом году', pos: 'phrase', tags: ['intro_age'] },
   { id: 'turehen_uderi', bxr: 'Танай түрэһэн үдэр хэзээб?', ru: 'Какого числа ваш день рождения?', pos: 'phrase', tags: ['intro_age'] },
   { id: 'bi', bxr: 'би', ru: 'я', pos: 'pron', tags: ['intro_age'], transcription: 'би' },
   { id: 'shi', bxr: 'ши', ru: 'ты', pos: 'pron', tags: ['intro_age'], transcription: 'ши' },
@@ -60,16 +61,16 @@ export const unit1: VocabItem[] = [
 ]
 
 export const unit1Sentences = [
-  { id: 'u1s1', bxr: 'Сайн байна!', ru: 'Здравствуйте!', tags: ['greet_day', 'u1'] },
-  { id: 'u1s2', bxr: 'Мэндээ!', ru: 'Привет!', tags: ['greet_day', 'u1'] },
-  { id: 'u1s3', bxr: 'Үглөөнэй мэндэ!', ru: 'Доброе утро!', tags: ['greet_day', 'u1'] },
-  { id: 'u1s4', bxr: 'Үдэрэй мэндэ!', ru: 'Добрый день!', tags: ['greet_day', 'u1'] },
-  { id: 'u1s5', bxr: 'Үдэшын мэндэ!', ru: 'Добрый вечер!', tags: ['greet_day', 'u1'] },
-  { id: 'u1s6', bxr: 'Ши хэн гэжэ нэрэтэйбши?', ru: 'Как тебя зовут?', tags: ['intro_name', 'u1'] },
-  { id: 'u1s7', bxr: 'Би арбатайб', ru: 'Мне 10 лет', tags: ['intro_age', 'u1'] },
-  { id: 'u1s8', bxr: 'Ши хэдытэйбши?', ru: 'Сколько тебе лет?', tags: ['intro_age', 'u1'] },
-  { id: 'u1s9', bxr: 'Би буряад яһанайб', ru: 'Я по национальности бурят', tags: ['intro_origin', 'u1'] },
-  { id: 'u1s10', bxr: 'Та хаанаһаа ерээбта?', ru: 'Откуда вы приехали?', tags: ['intro_origin', 'u1'] },
-  { id: 'u1s11', bxr: 'Би ехэ баяртай байнаб', ru: 'Я очень рад', tags: ['intro_origin', 'u1'] },
-  { id: 'u1s12', bxr: 'Хүлисэгты', ru: 'Извините', tags: ['greet_day', 'u1'] },
+  { id: 'u3s1', bxr: 'Сайн байна!', ru: 'Здравствуйте!', tags: ['greet_day', 'u3'] },
+  { id: 'u3s2', bxr: 'Мэндээ!', ru: 'Привет!', tags: ['greet_day', 'u3'] },
+  { id: 'u3s3', bxr: 'Үглөөнэй мэндэ!', ru: 'Доброе утро!', tags: ['greet_day', 'u3'] },
+  { id: 'u3s4', bxr: 'Үдэрэй мэндэ!', ru: 'Добрый день!', tags: ['greet_day', 'u3'] },
+  { id: 'u3s5', bxr: 'Үдэшын мэндэ!', ru: 'Добрый вечер!', tags: ['greet_day', 'u3'] },
+  { id: 'u3s6', bxr: 'Ши хэн гэжэ нэрэтэйбши?', ru: 'Как тебя зовут?', tags: ['intro_name', 'u3'] },
+  { id: 'u3s7', bxr: 'Би арбатайб', ru: 'Мне 10 лет', tags: ['intro_age', 'u3'] },
+  { id: 'u3s8', bxr: 'Ши хэдытэйбши?', ru: 'Сколько тебе лет?', tags: ['intro_age', 'u3'] },
+  { id: 'u3s9', bxr: 'Би буряад яһанайб', ru: 'Я по национальности бурят', tags: ['intro_origin', 'u3'] },
+  { id: 'u3s10', bxr: 'Та хаанаһаа ерээбта?', ru: 'Откуда вы приехали?', tags: ['intro_origin', 'u3'] },
+  { id: 'u3s11', bxr: 'Би ехэ баяртай байнаб', ru: 'Я очень рад', tags: ['intro_origin', 'u3'] },
+  { id: 'u3s12', bxr: 'Хүлисэгты', ru: 'Извините', tags: ['greet_day', 'u3'] },
 ]

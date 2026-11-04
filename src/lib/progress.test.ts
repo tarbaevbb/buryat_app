@@ -127,21 +127,21 @@ describe('mergeProgress', () => {
   it('берёт максимум по XP и результатам уроков', () => {
     const local = snapshot({
       xp: 100,
-      lessons: { u1l1: { lessonId: 'u1l1', score: 80, accuracy: 70, xp: 20, completedAt: 100 } },
+      lessons: { u3l1: { lessonId: 'u3l1', score: 80, accuracy: 70, xp: 20, completedAt: 100 } },
     })
     const remote = snapshot({
       xp: 250,
       lessons: {
-        u1l1: { lessonId: 'u1l1', score: 95, accuracy: 90, xp: 25, completedAt: 200 },
-        u2l1: { lessonId: 'u2l1', score: 60, accuracy: 55, xp: 12, completedAt: 150 },
+        u3l1: { lessonId: 'u3l1', score: 95, accuracy: 90, xp: 25, completedAt: 200 },
+        u1l1: { lessonId: 'u1l1', score: 60, accuracy: 55, xp: 12, completedAt: 150 },
       },
     })
     const merged = mergeProgress(local, remote, NOW)
 
     expect(merged.xp).toBe(250)
-    expect(merged.lessons.u1l1.score).toBe(95)
-    expect(merged.lessons.u1l1.completedAt).toBe(200)
-    expect(merged.lessons.u2l1.score).toBe(60)
+    expect(merged.lessons.u3l1.score).toBe(95)
+    expect(merged.lessons.u3l1.completedAt).toBe(200)
+    expect(merged.lessons.u1l1.score).toBe(60)
   })
 
   it('объединяет уроки с обеих сторон, не теряя ни один', () => {

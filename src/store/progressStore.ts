@@ -70,6 +70,19 @@ export interface PersistedState extends XpCarrier {
   resetPending: boolean
 }
 
+/** Сохраняет пройденные уроки при перенумерации первых трёх разделов. */
+function remapReorderedLessonProgress(lessons: Record<string, LessonResult>): Record<string, LessonResult> {
+  const remapId = (id: string) => id
+    .replace(/^u1l/, 'tmp-l')
+    .replace(/^u2l/, 'u1l')
+    .replace(/^u3l/, 'u2l')
+    .replace(/^tmp-l/, 'u3l')
+  return Object.fromEntries(Object.entries(lessons).map(([id, result]) => {
+    const lessonId = remapId(id)
+    return [lessonId, { ...result, lessonId }]
+  }))
+}
+
 function emptyPersisted(): PersistedState {
   return {
     xp: 0,
@@ -219,7 +232,7 @@ export const useProgress = create<ProgressState>()(
     }),
     {
       name: 'buryat-progress-v2',
-      version: 3,
+      version: 4,
       partialize: (state) => {
         const {
           heartsNow: _h,
@@ -244,6 +257,7 @@ export const useProgress = create<ProgressState>()(
        * поэтому старые записи переносим вручную (см. migrateLegacyProgress).
        *
        * v2 → v3: механика гемов удалена, а запас сердец вырос с 5 до 20.
+       * v3 → v4: перенумерованы первые три раздела; переносим ключи уроков.
        * Всем, у кого остался старый запас, выдаём полный — иначе после
        * обновления игрок оказался бы с 5 сердцами из 20.
        */
@@ -254,6 +268,7 @@ export const useProgress = create<ProgressState>()(
         return {
           ...emptyPersisted(),
           ...rest,
+          lessons: version < 4 ? remapReorderedLessonProgress(state.lessons ?? {}) : (state.lessons ?? {}),
           hearts: version < 3 ? MAX_HEARTS : Math.min(MAX_HEARTS, Math.max(0, state.hearts ?? MAX_HEARTS)),
           syncedSignature: version < 2 ? null : (state.syncedSignature ?? null),
           resetPending: false,
@@ -303,6 +318,7 @@ export function migrateLegacyProgress(): void {
     useProgress.setState({
       ...emptyPersisted(),
       ...rest,
+      lessons: remapReorderedLessonProgress(legacy.lessons ?? {}),
       syncedSignature: null,
       // Новая экономика: у всех новый игрок начинает с полного запаса.
       hearts: MAX_HEARTS,
