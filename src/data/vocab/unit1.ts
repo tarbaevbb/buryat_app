@@ -14,7 +14,7 @@ import type { VocabItem } from '../types'
 export const unit1: VocabItem[] = [
   // --- Приветствия и вежливость ---
   { id: 'sain_baina_greet', bxr: 'Сайн байна!', ru: 'Здравствуйте!', pos: 'phrase', tags: ['greet_day'] },
-  { id: 'mendee_greet', bxr: 'Мэндээ!', ru: 'Привет!', pos: 'phrase', tags: ['greet_day'] },
+  { id: 'mendee_greet', bxr: 'Мэндээ!', ru: 'Привет!', ruAlternatives: ['Здравствуйте!'], pos: 'phrase', tags: ['greet_day'] },
   { id: 'ugluuney_mende', bxr: 'Үглөөнэй мэндэ!', ru: 'Доброе утро!', pos: 'phrase', tags: ['greet_day'] },
   { id: 'uderey_mende', bxr: 'Үдэрэй мэндэ!', ru: 'Добрый день!', pos: 'phrase', tags: ['greet_day'] },
   { id: 'udesyn_mende', bxr: 'Үдэшын мэндэ!', ru: 'Добрый вечер!', pos: 'phrase', tags: ['greet_day'] },

@@ -23,6 +23,25 @@ function distractorPool(
   })
 }
 
+function translationKeys(vocab: VocabItem): string[] {
+  return [vocab.ru, ...(vocab.ruAlternatives ?? [])].map(normalize)
+}
+
+function translationsOverlap(left: VocabItem, right: VocabItem): boolean {
+  const rightKeys = new Set(translationKeys(right))
+  return translationKeys(left).some((key) => rightKeys.has(key))
+}
+
+function uniqueTranslations(vocab: VocabItem): string[] {
+  const seen = new Set<string>()
+  return [vocab.ru, ...(vocab.ruAlternatives ?? [])].filter((translation) => {
+    const key = normalize(translation)
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 function buildSelect(
   rng: () => number,
   vocab: VocabItem,
@@ -31,18 +50,20 @@ function buildSelect(
 ): SelectExercise | null {
   // Не показываем одинаковые переводы под разными карточками. Иначе в
   // упражнении могут оказаться два фактически правильных ответа.
-  const answerKey = normalize(vocab.ru)
-  const seen = new Set([answerKey])
-  const pool = options.filter((o) => {
-    const key = normalize(o.ru)
-    if (o.id === vocab.id || seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
-  const count = Math.min(optionsCount, pool.length + 1)
-  if (count < 3) return null
-  const wrong = shuffle(pool, rng).slice(0, count - 1)
-  const all = shuffle([vocab, ...wrong], rng)
+  const answers = uniqueTranslations(vocab)
+  const seen = new Set(answers.map(normalize))
+  const pool: VocabItem[] = []
+  for (const option of options) {
+    if (option.id === vocab.id || translationsOverlap(vocab, option)) continue
+    const keys = translationKeys(option)
+    if (keys.some((key) => seen.has(key))) continue
+    keys.forEach((key) => seen.add(key))
+    pool.push(option)
+  }
+  const wrongCount = Math.min(optionsCount - answers.length, pool.length)
+  if (wrongCount < 1) return null
+  const wrong = shuffle(pool, rng).slice(0, wrongCount)
+  const all = shuffle([...answers, ...wrong.map((option) => option.ru)], rng)
   return {
     kind: 'select',
     id: `select:${vocab.id}`,
@@ -50,7 +71,8 @@ function buildSelect(
     promptLang: 'bxr',
     prompt: vocab.bxr,
     answer: vocab.ru,
-    options: all.map((o) => o.ru),
+    options: all,
+    acceptedAnswers: answers,
     vocabId: vocab.id,
   }
 }
@@ -148,7 +170,7 @@ function buildSentenceTask(
 function buildMatch(rng: () => number, vocab: VocabItem[], size = 5): MatchExercise | null {
   const seenBxr = new Set<string>()
   const seenRu = new Set<string>()
-  const usable = vocab.filter((v) => {
+  const unique = vocab.filter((v) => {
     const bxr = normalize(v.bxr)
     const ru = normalize(v.ru)
     if (v.needsReview || v.pos === 'sound' || v.pos === 'letter' || v.ru.length >= 30) return false
@@ -157,6 +179,16 @@ function buildMatch(rng: () => number, vocab: VocabItem[], size = 5): MatchExerc
     seenRu.add(ru)
     return true
   })
+  const ambiguous = new Set<string>()
+  for (let i = 0; i < unique.length; i += 1) {
+    for (let j = i + 1; j < unique.length; j += 1) {
+      if (translationsOverlap(unique[i], unique[j])) {
+        ambiguous.add(unique[i].id)
+        ambiguous.add(unique[j].id)
+      }
+    }
+  }
+  const usable = unique.filter((v) => !ambiguous.has(v.id))
   if (usable.length < 3) return null
   const pairs = shuffle(usable, rng)
     .slice(0, Math.min(size, usable.length))
@@ -221,6 +253,7 @@ export function generateExercises(lessonId: string, target = 10): Exercise[] {
     const answerKey = normalize(item.bxr)
     const seen = new Set([answerKey])
     const pool = distractorPool(vocab, item.pos, learnedVocab).filter((o) => {
+      if (translationsOverlap(item, o)) return false
       const key = normalize(o.bxr)
       if (seen.has(key)) return false
       seen.add(key)

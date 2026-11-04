@@ -21,6 +21,9 @@ export function SelectExerciseView({ exercise, checked, onWrong, onCorrect }: Pr
   const [wrongPicks, setWrongPicks] = useState<string[]>([])
   /** Плитка, которую нужно «тряхнуть» — ключ кадра анимации. */
   const [shaking, setShaking] = useState<{ option: string; key: number } | null>(null)
+  const acceptedAnswers = exercise.acceptedAnswers ?? [exercise.answer]
+  const isAcceptedAnswer = (option: string) =>
+    acceptedAnswers.some((answer) => isCorrect(option, answer))
 
   useEffect(() => {
     setWrongPicks([])
@@ -34,7 +37,7 @@ export function SelectExerciseView({ exercise, checked, onWrong, onCorrect }: Pr
     // первый сигнал, и звук появится только со второго нажатия.
     primeFeedback()
 
-    if (isCorrect(option, exercise.answer)) {
+    if (isAcceptedAnswer(option)) {
       feedback('correct')
       onCorrect()
       return
@@ -71,7 +74,7 @@ export function SelectExerciseView({ exercise, checked, onWrong, onCorrect }: Pr
         {exercise.options.map((option, i) => {
           const isWrong = wrongPicks.includes(option)
           const state = checked
-            ? isCorrect(option, exercise.answer)
+              ? isAcceptedAnswer(option)
               ? 'correct'
               : isWrong
                 ? 'wrong'
@@ -99,7 +102,7 @@ export function SelectExerciseView({ exercise, checked, onWrong, onCorrect }: Pr
 
       {checked && (
         <p className="mt-4 rounded-xl bg-brand/10 p-3 text-sm font-semibold text-brand">
-          {exercise.prompt} — {exercise.answer}
+          {exercise.prompt} — {acceptedAnswers.join(' / ')}
         </p>
       )}
     </div>

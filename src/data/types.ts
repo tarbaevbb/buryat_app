@@ -16,6 +16,8 @@ export interface VocabItem {
   bxr: string
   /** Русский перевод. */
   ru: string
+  /** Допустимые варианты перевода, которые тоже считаются правильными. */
+  ruAlternatives?: string[]
   /** Приблизительная транскрипция для отработки чтения. */
   transcription?: string
   pos: Pos
@@ -71,6 +73,8 @@ export interface SelectExercise {
   promptLang: 'ru' | 'bxr'
   prompt: string
   answer: string
+  /** Несколько верных вариантов ответа, если у слова есть синонимичные переводы. */
+  acceptedAnswers?: string[]
   options: string[]
   vocabId: string
 }
