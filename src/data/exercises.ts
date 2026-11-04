@@ -9,9 +9,18 @@ import type {
   VocabItem,
 } from './types'
 
-/** Для дистракторов используем только лексику текущего урока. */
-function distractorPool(lessonVocab: VocabItem[], pos: VocabItem['pos']): VocabItem[] {
-  return lessonVocab.filter((v) => v.pos === pos && !v.needsReview)
+/** Используем лексику текущего и уже пройденных уроков. */
+function distractorPool(
+  lessonVocab: VocabItem[],
+  pos: VocabItem['pos'],
+  learnedVocab: VocabItem[],
+): VocabItem[] {
+  const seen = new Set<string>()
+  return [...lessonVocab, ...learnedVocab].filter((v) => {
+    if (v.pos !== pos || v.needsReview || seen.has(v.id)) return false
+    seen.add(v.id)
+    return true
+  })
 }
 
 function buildSelect(
@@ -160,14 +169,21 @@ function buildMatch(rng: () => number, vocab: VocabItem[], size = 5): MatchExerc
  * Порядок стабилен (сид от id урока) — прогресс не «перемешивается» между запусками.
  */
 export function generateExercises(lessonId: string, target = 10): Exercise[] {
-  const lesson = course.lessons.find((l) => l.id === lessonId)
-  if (!lesson) return []
+  const lessonIndex = course.lessons.findIndex((l) => l.id === lessonId)
+  if (lessonIndex < 0) return []
+  const lesson = course.lessons[lessonIndex]
 
   const rng = makeRng(hashString(lessonId))
   const vocab = lesson.vocabIds
     .map((id) => getVocab(id))
     .filter((v): v is VocabItem => Boolean(v && !v.needsReview))
   if (vocab.length === 0) return []
+  const learnedIds = new Set(course.lessons
+    .slice(0, lessonIndex)
+    .flatMap((previousLesson) => previousLesson.vocabIds))
+  const learnedVocab = [...learnedIds]
+    .map((id) => getVocab(id))
+    .filter((v): v is VocabItem => Boolean(v && !v.needsReview))
 
   const exercises: Exercise[] = []
   const learning = vocab.filter((v) => v.pos !== 'sound' && v.pos !== 'letter')
@@ -177,7 +193,7 @@ export function generateExercises(lessonId: string, target = 10): Exercise[] {
   // 1. Сначала — выбор перевода для новых слов.
   for (const item of ordered) {
     if (exercises.length >= Math.ceil(target * 0.5)) break
-    const select = buildSelect(rng, item, distractorPool(vocab, item.pos))
+    const select = buildSelect(rng, item, distractorPool(vocab, item.pos, learnedVocab))
     if (select) exercises.push(select)
   }
 
@@ -191,7 +207,11 @@ export function generateExercises(lessonId: string, target = 10): Exercise[] {
   // 3. Задание на чтение (транскрипция).
   const readingCandidate = ordered.find((v) => v.transcription)
   if (readingCandidate && exercises.length < target) {
-    const reading = buildReading(rng, readingCandidate, distractorPool(vocab, readingCandidate.pos))
+    const reading = buildReading(
+      rng,
+      readingCandidate,
+      distractorPool(vocab, readingCandidate.pos, learnedVocab),
+    )
     if (reading) exercises.push(reading)
   }
 
@@ -200,7 +220,7 @@ export function generateExercises(lessonId: string, target = 10): Exercise[] {
     if (exercises.length >= target - 1) break
     const answerKey = normalize(item.bxr)
     const seen = new Set([answerKey])
-    const pool = distractorPool(vocab, item.pos).filter((o) => {
+    const pool = distractorPool(vocab, item.pos, learnedVocab).filter((o) => {
       const key = normalize(o.bxr)
       if (seen.has(key)) return false
       seen.add(key)

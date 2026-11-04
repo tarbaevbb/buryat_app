@@ -81,7 +81,7 @@ const unitSpecs: UnitSpec[] = [
   {
     id: 'u2',
     title: 'Первые слова',
-    titleBxr: 'Үгэ ба уншалга',
+    titleBxr: 'Түрүүшын үгэнүүд',
     description: 'Базовые слова с особыми буквами, цвета, частые выражения и вопросы.',
     color: '#1cb0f6',
     colorShadow: '#1899d6',
