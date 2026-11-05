@@ -92,7 +92,7 @@ export const useSession = create<SessionState>((set, get) => ({
 function wordIdsFor(exercise: Exercise, fallback: string[]): string[] {
   if (exercise.kind === 'match') return exercise.pairs.map((p) => p.vocabId)
   if (exercise.kind === 'build') return exercise.sentenceId ? [exercise.sentenceId] : fallback
-  return [exercise.vocabId]
+  return exercise.relatedVocabIds ?? [exercise.vocabId]
 }
 
 /** Текущее задание. */

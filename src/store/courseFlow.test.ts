@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useProgress } from './progressStore'
 import { course } from '../data/course'
 import { generateExercises } from '../data/exercises'
+import { normalize } from '../lib/normalize'
 import { sessionSummary, useSession } from './sessionStore'
 
 /**
@@ -106,8 +107,10 @@ describe('прохождение курса', () => {
         if (ex.kind === 'select') {
           expect(ex.options).toContain(ex.answer)
         } else if (ex.kind === 'build') {
-          const words = ex.answer.split(/\s+/)
-          for (const w of words) expect(ex.tokens).toContain(w)
+          const tokenWords = new Set(ex.tokens.flatMap((token) => normalize(token).split(/\s+/)))
+          for (const word of normalize(ex.answer).split(/\s+/)) {
+            expect(tokenWords).toContain(word)
+          }
         } else {
           // В match каждая пара должна быть непустой и уникальной.
           expect(new Set(ex.pairs.map((p) => p.bxr)).size).toBe(ex.pairs.length)

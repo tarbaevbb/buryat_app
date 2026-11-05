@@ -48,7 +48,11 @@ export function SelectExerciseView({ exercise, checked, onWrong, onCorrect }: Pr
     onWrong()
   }
 
-  const title = exercise.promptLang === 'bxr' ? 'Что это значит?' : 'Как сказать по-бурятски?'
+  const title = exercise.sentenceId
+    ? 'Как понять эту фразу?'
+    : exercise.promptLang === 'bxr'
+      ? 'Что это значит?'
+      : 'Как сказать по-бурятски?'
 
   return (
     <div className="animate-pop-in">

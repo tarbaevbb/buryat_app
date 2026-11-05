@@ -38,26 +38,41 @@ export function ReviewScreen() {
    * он пересобирался бы после каждого ответа и текущее слово «перескакивало».
    */
   const [words, setWords] = useState<VocabItem[]>(() => pickReviewWords(wordStats, 10, 1))
+  const seenWordStatsRef = useRef(wordStats)
 
   const current: VocabItem | undefined = words[index]
 
   const options = useMemo(() => {
     if (!current) return []
-    const pool = [...course.vocab.values()].filter(
-      (v) => v.ru !== current.ru && v.pos === current.pos,
-    )
+    const acceptedAnswers = [current.ru, ...(current.ruAlternatives ?? [])]
+    const answerKeys = new Set(acceptedAnswers.map(normalize))
+    const pool = [...course.vocab.values()].filter((v) => {
+      if (v.needsReview || v.pos !== current.pos || (seenWordStatsRef.current[v.id]?.seen ?? 0) === 0) return false
+      return ![v.ru, ...(v.ruAlternatives ?? [])].some((translation) => answerKeys.has(normalize(translation)))
+    })
     const rng = makeRng(index + current.id.length)
-    const wrong = shuffle(pool, rng).slice(0, 3)
-    return shuffle([...wrong.map((w) => w.ru), current.ru], rng)
+    const wrongAnswers: string[] = []
+    const seen = new Set(answerKeys)
+    for (const candidate of shuffle(pool, rng)) {
+      const translations = [candidate.ru, ...(candidate.ruAlternatives ?? [])]
+      const keys = translations.map(normalize)
+      if (keys.some((key) => !key || seen.has(key))) continue
+      keys.forEach((key) => seen.add(key))
+      wrongAnswers.push(candidate.ru)
+      if (wrongAnswers.length >= Math.max(1, 4 - acceptedAnswers.length)) break
+    }
+    return shuffle([...acceptedAnswers, ...wrongAnswers], rng)
   }, [current, index])
 
   const pick = (option: string) => {
     if (!current || wrongPicks.includes(option)) return
     primeFeedback()
 
-    if (normalize(option) === normalize(current.ru)) {
+    const acceptedAnswers = [current.ru, ...(current.ruAlternatives ?? [])]
+    if (acceptedAnswers.some((answer) => normalize(option) === normalize(answer))) {
       feedback('correct')
       recordWord(current.id, true)
+      seenWordStatsRef.current = useProgress.getState().wordStats
       setSolved((n) => n + 1)
       if (firstTryRef.current) setFirstTry((n) => n + 1)
       firstTryRef.current = true
@@ -88,7 +103,8 @@ export function ReviewScreen() {
 
   const restart = () => {
     // Новый подход — фиксируем свежую статистику и новый набор слов.
-    setWords(pickReviewWords(useProgress.getState().wordStats, 10, round + 2))
+    seenWordStatsRef.current = useProgress.getState().wordStats
+    setWords(pickReviewWords(seenWordStatsRef.current, 10, round + 2))
     awardedRef.current = false
     firstTryRef.current = true
     setRound((r) => r + 1)

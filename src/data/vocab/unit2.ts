@@ -38,24 +38,24 @@ export const unit2: VocabItem[] = [
   { id: 'nogoon', bxr: 'ногоон', ru: 'зелёный', transcription: 'ногоон', pos: 'adj', tags: ['reading'] },
   { id: 'shara', bxr: 'шара', ru: 'жёлтый', transcription: 'шара', pos: 'adj', tags: ['reading'] },
   { id: 'talha', bxr: 'талха', ru: 'хлеб', transcription: 'талха', pos: 'noun', tags: ['reading'] },
-  { id: 'buga', bxr: 'буга', ru: 'олень', transcription: 'буга', pos: 'noun', tags: ['reading'], needsReview: true },
   { id: 'yabaha', bxr: 'ябаха', ru: 'идти', transcription: 'ябаха', pos: 'verb', tags: ['reading'] },
   { id: 'uuha', bxr: 'ууха', ru: 'пить', transcription: 'ууха', pos: 'verb', tags: ['reading'] },
   { id: 'edikhe', bxr: 'эдихэ', ru: 'есть (кушать)', transcription: 'эдихэ', pos: 'verb', tags: ['reading'] },
 
   // --- Вежливые слова ---
-  { id: 'sain', bxr: 'сайн', ru: 'хорошо, здоровый', pos: 'adj', tags: ['polite'], transcription: 'сайн' },
+  { id: 'sain', bxr: 'сайн', ru: 'хороший, добрый (можно использовать как приветствие)', pos: 'adj', tags: ['polite'], transcription: 'сайн' },
   { id: 'baina', bxr: 'байна', ru: 'есть, находится', pos: 'verb', tags: ['polite'], transcription: 'байна' },
+  { id: 'sain_baina', bxr: 'сайн байна', ru: 'здравствуй', pos: 'verb', tags: ['polite'], transcription: 'сайн байна' },
   { id: 'tiim', bxr: 'тиимэ', ru: 'да, верно', pos: 'phrase', tags: ['polite'], transcription: 'тиимэ' },
   { id: 'ugui', bxr: 'үгүй', ru: 'нет, не имеется', pos: 'phrase', tags: ['polite'], transcription: 'үгүй' },
   { id: 'muu', bxr: 'муу', ru: 'плохо', pos: 'adv', tags: ['polite'], transcription: 'муу' },
-  { id: 'daa', bxr: 'даа', ru: 'ладно, хорошо (частица)', pos: 'phrase', tags: ['polite'], needsReview: true },
+  { id: 'zaa', bxr: 'заа', ru: 'ладно', pos: 'phrase', tags: ['polite']},
 
   // --- Вопросы, школа, дом ---
   { id: 'khen_be', bxr: 'хэн бэ?', ru: 'кто (это)?', pos: 'phrase', tags: ['question'], transcription: 'хэн бэ' },
   { id: 'yamar', bxr: 'ямар', ru: 'какой', pos: 'pron', tags: ['question'], transcription: 'ямар' },
   { id: 'khaana', bxr: 'хаана', ru: 'где', pos: 'adv', tags: ['question'], transcription: 'хаана' },
-  { id: 'hedi', bxr: 'хэды', ru: 'сколько', pos: 'pron', tags: ['question'], needsReview: true },
+  { id: 'hedi', bxr: 'хэды', ru: 'сколько', pos: 'pron', tags: ['question'], transcription: 'хэды' },
   { id: 'yuu', bxr: 'юу', ru: 'что', pos: 'pron', tags: ['question'], transcription: 'юу' },
   { id: 'ene', bxr: 'энэ', ru: 'это', pos: 'pron', tags: ['question'], transcription: 'энэ' },
   { id: 'tere', bxr: 'тэрэ', ru: 'то', pos: 'pron', tags: ['question'], transcription: 'тэрэ' },

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { course, getLesson, getVocab } from '../data/course'
 import { exerciseVocabIds, generateExercises } from '../data/exercises'
 import { allVocabItems } from '../data/course'
+import { normalize } from '../lib/normalize'
 
 describe('структура курса', () => {
   it('содержит 5 разделов по 5 уроков', () => {
@@ -56,9 +57,11 @@ describe('генерация упражнений', () => {
           expect(new Set(ex.options).size).toBe(ex.options.length)
         }
         if (ex.kind === 'build') {
-          // все слова ответа должны быть среди плиток
-          for (const word of ex.answer.split(/\s+/)) {
-            expect(ex.tokens).toContain(word)
+          // Плитка может быть устойчивым выражением («хэн бэ?»), но каждое
+          // слово ответа должно присутствовать в одной из плиток.
+          const tokenWords = new Set(ex.tokens.flatMap((token) => normalize(token).split(/\s+/)))
+          for (const word of normalize(ex.answer).split(/\s+/)) {
+            expect(tokenWords).toContain(word)
           }
         }
         if (ex.kind === 'match') {
@@ -117,6 +120,25 @@ describe('exerciseVocabIds', () => {
       for (const ex of generateExercises(lesson.id)) {
         for (const id of exerciseVocabIds(ex)) {
           expect(getVocab(id), `слово ${id} отсутствует`).toBeDefined()
+        }
+      }
+    }
+  })
+
+  it('не даёт упражнений со словами из будущих уроков', () => {
+    for (const [lessonIndex, lesson] of course.lessons.entries()) {
+      const learnedIds = new Set(
+        course.lessons
+          .slice(0, lessonIndex + 1)
+          .flatMap((knownLesson) => knownLesson.vocabIds),
+      )
+
+      for (const exercise of generateExercises(lesson.id)) {
+        for (const vocabId of exerciseVocabIds(exercise)) {
+          expect(
+            learnedIds.has(vocabId),
+            `${lesson.id}: слово ${vocabId} ещё не изучалось`,
+          ).toBe(true)
         }
       }
     }

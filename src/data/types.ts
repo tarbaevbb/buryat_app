@@ -75,6 +75,9 @@ export interface SelectExercise {
   acceptedAnswers?: string[]
   options: string[]
   vocabId: string
+  /** Фразовый выбор учитывает все слова из предложения в статистике. */
+  sentenceId?: string
+  relatedVocabIds?: string[]
 }
 
 export interface BuildExercise {
