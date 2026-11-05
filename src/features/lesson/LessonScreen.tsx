@@ -29,7 +29,16 @@ interface Props {
  */
 export function LessonScreen({ lessonId, onExit }: Props) {
   const lesson = useMemo(() => getLesson(lessonId), [lessonId])
-  const exercises = useMemo(() => generateExercises(lessonId), [lessonId])
+  // Набор заданий фиксируется на старте урока. Статистику слов и номер
+  // попытки читаем напрямую из стора, чтобы не подписываться на них:
+  // иначе ответ на задание менял бы `wordStats` и набор пересобирался.
+  const exercises = useMemo(() => {
+    const state = useProgress.getState()
+    return generateExercises(lessonId, 10, {
+      wordStats: state.wordStats,
+      attempt: state.lessonAttempts[lessonId] ?? 0,
+    })
+  }, [lessonId])
 
   const session = useSession()
   const { start, submitCorrect, submitWrong, next, clear } = session

@@ -141,6 +141,24 @@ describe('генерация упражнений', () => {
     expect(generateExercises('nope')).toEqual([])
     expect(getLesson('nope')).toBeUndefined()
   })
+
+  /** Повторный заход должен давать другой набор, иначе слабое место заучивается по порядку. */
+  it('каждая попытка даёт другой набор заданий', () => {
+    const first = generateExercises('u3l1', 10, { attempt: 0 }).map((e) => e.id)
+    const second = generateExercises('u3l1', 10, { attempt: 1 }).map((e) => e.id)
+    expect(first).not.toEqual(second)
+    // При этом внутри одной попытки набор стабилен.
+    expect(generateExercises('u3l1', 10, { attempt: 1 }).map((e) => e.id)).toEqual(second)
+  })
+
+  /** Ошибки прошлых заданий должны влиять на разминку в следующем уроке. */
+  it('в разминку попадают слова с ошибками', () => {
+    const weakId = 'aba'
+    const wordStats = { [weakId]: { errors: 9, seen: 10 } }
+    const exercises = generateExercises('u4l2', 10, { wordStats })
+    const touched = new Set(exercises.flatMap((e) => exerciseVocabIds(e)))
+    expect(touched.has(weakId)).toBe(true)
+  })
 })
 
 describe('exerciseVocabIds', () => {

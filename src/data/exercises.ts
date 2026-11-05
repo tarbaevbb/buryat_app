@@ -10,17 +10,37 @@ import type {
   VocabItem,
 } from './types'
 
-/** Используем лексику текущего и уже пройденных уроков. */
+/**
+ * Дистракторы из текущего и уже пройденных уроков.
+ *
+ * Порядок важен: `buildSelect` берёт варианты с начала пула, поэтому первыми
+ * идут слова с общими тегами — они и есть сильные дистракторы («Үдэрэй мэндэ!»
+ * против «Үдэшын мэндэ!»). Совпадение только по части речи — слабое:
+ * «среда» и «ученик» рядом ничего не проверяют.
+ */
 function distractorPool(
   lessonVocab: VocabItem[],
   pos: VocabItem['pos'],
   learnedVocab: VocabItem[],
+  anchor?: VocabItem,
 ): VocabItem[] {
   const seen = new Set<string>()
-  return [...lessonVocab, ...learnedVocab].filter((v) => {
+  const pool = [...lessonVocab, ...learnedVocab].filter((v) => {
     if (v.pos !== pos || v.needsReview || seen.has(v.id)) return false
     seen.add(v.id)
     return true
+  })
+  if (!anchor) return pool
+
+  const anchorTags = new Set(anchor.tags)
+  const shared = (v: VocabItem) => v.tags.filter((tag) => anchorTags.has(tag)).length
+  const sameLesson = new Set(lessonVocab.map((v) => v.id))
+  // Сортировка стабильная: сначала общие теги, затем слова того же урока,
+  // затем остальные — внутри группы порядок сохраняется.
+  return [...pool].sort((a, b) => {
+    const tagDiff = shared(b) - shared(a)
+    if (tagDiff !== 0) return tagDiff
+    return Number(sameLesson.has(b.id)) - Number(sameLesson.has(a.id))
   })
 }
 
@@ -38,6 +58,14 @@ function anyPosPool(lessonVocab: VocabItem[], learnedVocab: VocabItem[]): VocabI
     seen.add(v.id)
     return true
   })
+}
+
+/**
+ * Берёт варианты из начала приоритетного пула, перемешивая только «верх».
+ * Полное перемешивание убивало бы смысл сортировки в `distractorPool`.
+ */
+function takeTop(pool: VocabItem[], count: number, rng: () => number): VocabItem[] {
+  return shuffle(pool.slice(0, Math.min(pool.length, count * 2)), rng).slice(0, count)
 }
 
 function translationKeys(vocab: VocabItem): string[] {
@@ -82,7 +110,7 @@ function buildSelect(
   const wrongCount = Math.min(optionsCount - 1, pool.length)
   // Меньше трёх вариантов — это угадывание 50/50, такое задание не даём.
   if (wrongCount < 2) return null
-  const wrong = shuffle(pool, rng).slice(0, wrongCount)
+  const wrong = takeTop(pool, wrongCount, rng)
   const all = shuffle([answers[0], ...wrong.map((option) => option.ru)], rng)
   return {
     kind: 'select',
@@ -111,7 +139,7 @@ function buildReverseSelect(
     return true
   })
   if (pool.length < 2) return null
-  const wrong = shuffle(pool, rng).slice(0, 3)
+  const wrong = takeTop(pool, 3, rng)
   return {
     kind: 'select',
     id: `reverse:${vocab.id}`,
@@ -128,8 +156,19 @@ interface SentenceSegmentation {
   vocabIds: string[]
 }
 
-/** Сегментирует фразу только на слова и устойчивые выражения, уже изученные учеником. */
-function segmentKnownSentence(sentence: string, knownVocab: VocabItem[]): SentenceSegmentation | null {
+/**
+ * Сегментирует фразу на смысловые блоки.
+ *
+ * `unknownBudget` — сколько блоков разрешено взять «как есть», если слова
+ * нет в словаре. Такая плитка даётся готовой: ученик не выводит её сам,
+ * но собирает порядок фразы. Без бюджета (0) функция строгая — возвращает
+ * `null`, если фраза содержит незнакомые формы.
+ */
+function segmentSentence(
+  sentence: string,
+  knownVocab: VocabItem[],
+  unknownBudget = 0,
+): SentenceSegmentation | null {
   const surface = sentence.split(/\s+/).filter(Boolean)
   const words = surface.map((word) => normalize(word))
   const entries = knownVocab
@@ -137,29 +176,41 @@ function segmentKnownSentence(sentence: string, knownVocab: VocabItem[]): Senten
     .map((v) => ({ id: v.id, words: normalize(v.bxr).split(' ') }))
     .filter((entry) => entry.words.length > 0)
     .sort((a, b) => b.words.length - a.words.length)
-  const memo = new Map<number, SentenceSegmentation | null>()
+  const memo = new Map<string, SentenceSegmentation | null>()
 
-  const visit = (index: number): SentenceSegmentation | null => {
+  const visit = (index: number, budget: number): SentenceSegmentation | null => {
     if (index === words.length) return { chunks: [], vocabIds: [] }
-    if (memo.has(index)) return memo.get(index) ?? null
+    const key = `${index}:${budget}`
+    if (memo.has(key)) return memo.get(key) ?? null
 
+    // Сначала пробуем знакомые слова и устойчивые выражения — от длинных к коротким.
     for (const entry of entries) {
       if (!entry.words.every((word, offset) => words[index + offset] === word)) continue
-      const rest = visit(index + entry.words.length)
+      const rest = visit(index + entry.words.length, budget)
       if (!rest) continue
       const result = {
         chunks: [surface.slice(index, index + entry.words.length).join(' '), ...rest.chunks],
         vocabIds: [entry.id, ...rest.vocabIds],
       }
-      memo.set(index, result)
+      memo.set(key, result)
       return result
     }
 
-    memo.set(index, null)
+    // Незнакомое слово: берём как готовую плитку, если бюджет позволяет.
+    if (budget > 0) {
+      const rest = visit(index + 1, budget - 1)
+      if (rest) {
+        const result = { chunks: [surface[index], ...rest.chunks], vocabIds: rest.vocabIds }
+        memo.set(key, result)
+        return result
+      }
+    }
+
+    memo.set(key, null)
     return null
   }
 
-  const result = visit(0)
+  const result = visit(0, unknownBudget)
   if (!result) return null
   return { ...result, vocabIds: [...new Set(result.vocabIds)] }
 }
@@ -189,9 +240,33 @@ function buildSentenceTask(
 ): BuildExercise | null {
   const sentence = getSentence(sentenceId)
   if (!sentence || sentence.needsReview) return null
-  const segmentation = segmentKnownSentence(sentence.bxr, knownVocab)
-  // Не требуем собирать по отдельным словам фразу, если она изучалась целиком.
-  if (!segmentation || segmentation.chunks.length < 2) return null
+  // Сначала строгая сегментация: вся фраза из изученных блоков.
+  // Если не выходит — разрешаем одно незнакомое слово готовой плиткой:
+  // ученик не выводит его сам, но собирает порядок. Полностью собирать
+  // фразу из одних незнакомых плиток смысла нет.
+  let segmentation = segmentSentence(sentence.bxr, knownVocab, 0)
+  if (!segmentation) segmentation = segmentSentence(sentence.bxr, knownVocab, 1)
+  if (!segmentation || segmentation.chunks.length < 2) {
+    // Фраза изучается целиком («Үглөөнэй мэндэ!» — одна карточка): собирать
+    // по блокам нечего. Если слов немного, даём их готовыми плитками —
+    // это тренирует порядок слов, а не догадку.
+    const words = sentence.bxr.split(/\s+/).filter(Boolean)
+    if (words.length < 2 || words.length > 4) return null
+    const extraPool = knownVocab
+      .filter((v) => v.pos !== 'sound' && v.pos !== 'letter')
+      .map((v) => v.bxr)
+    return {
+      kind: 'build',
+      id: `build:${sentence.id}`,
+      promptLang: 'ru',
+      prompt: sentence.ru,
+      answer: sentence.bxr,
+      tokens: buildTiles(words, rng, extraPool),
+      sentenceId: sentence.id,
+      // Фраза изучается целиком: отдельных слов словаря здесь нет.
+      relatedVocabIds: [],
+    }
+  }
   const extraPool = knownVocab
     .filter((v) => v.pos !== 'sound' && v.pos !== 'letter')
     .map((v) => v.bxr)
@@ -204,6 +279,7 @@ function buildSentenceTask(
     answer: sentence.bxr,
     tokens: buildTiles(segmentation.chunks, rng, extraPool),
     sentenceId: sentence.id,
+    relatedVocabIds: segmentation.vocabIds,
   }
 }
 
@@ -214,7 +290,7 @@ function buildSentenceSelect(
   knownVocab: VocabItem[],
 ): SelectExercise | null {
   const sentence = getSentence(sentenceId)
-  const segmentation = sentence && segmentKnownSentence(sentence.bxr, knownVocab)
+  const segmentation = sentence && segmentSentence(sentence.bxr, knownVocab)
   if (!sentence || sentence.needsReview || !segmentation) return null
 
   const meaningAnswers = [sentence.ru]
@@ -226,7 +302,7 @@ function buildSentenceSelect(
   const seen = new Set(acceptedAnswers.map(normalize))
   const distractors = shuffle(sentencePool, rng).filter((candidate) => {
     if (candidate.id === sentence.id || candidate.needsReview) return false
-    const candidateSegmentation = segmentKnownSentence(candidate.bxr, knownVocab)
+    const candidateSegmentation = segmentSentence(candidate.bxr, knownVocab)
     if (!candidateSegmentation) return false
     const candidateMeanings = [candidate.ru]
     if (candidateSegmentation.vocabIds.length === 1) {
@@ -307,13 +383,32 @@ function buildMatch(
 /** Потолок длины урока: даже большой словарь не должен давать бесконечный подход. */
 const MAX_LESSON_EXERCISES = 18
 
-export function generateExercises(lessonId: string, target = 10): Exercise[] {
+export interface GenerateOptions {
+  /**
+   * Статистика по словам (ошибки/показы). Если передана, в разминку
+   * попадают слова, где ученик чаще ошибался, а не случайные.
+   */
+  wordStats?: Record<string, { errors: number; seen: number }>
+  /** Номер попытки: каждое повторное прохождение даёт другой набор. */
+  attempt?: number
+}
+
+export function generateExercises(
+  lessonId: string,
+  target = 10,
+  options: GenerateOptions = {},
+): Exercise[] {
   if (target <= 0) return []
   const lessonIndex = course.lessons.findIndex((l) => l.id === lessonId)
   if (lessonIndex < 0) return []
   const lesson = course.lessons[lessonIndex]
 
-  const rng = makeRng(hashString(lessonId))
+  // Соль по попытке: без неё второй заход выдаёт ровно те же задания,
+  // и слабое место можно «заучить» по порядку, а не выучить.
+  const seed = options.attempt && options.attempt > 0
+    ? `${lessonId}#${options.attempt}`
+    : lessonId
+  const rng = makeRng(hashString(seed))
   const vocab = lesson.vocabIds
     .map((id) => getVocab(id))
     .filter((v): v is VocabItem => Boolean(v && !v.needsReview))
@@ -374,7 +469,7 @@ export function generateExercises(lessonId: string, target = 10): Exercise[] {
   // 1. Сначала — выбор перевода нескольких слов урока.
   for (const item of ordered) {
     if (exercises.filter((exercise) => exercise.kind === 'select' && !exercise.sentenceId && exercise.promptLang === 'bxr').length >= Math.min(3, Math.ceil(goal * 0.3))) break
-    const select = buildSelect(rng, item, distractorPool(vocab, item.pos, learnedVocab))
+    const select = buildSelect(rng, item, distractorPool(vocab, item.pos, learnedVocab, item))
     if (select) push(select)
   }
 
@@ -386,14 +481,32 @@ export function generateExercises(lessonId: string, target = 10): Exercise[] {
     .reverse()
     .find((previousLesson) => previousLesson.kind === 'lesson' && previousLesson.newVocabIds.length > 0)
   const recentIds = new Set(recentLesson?.newVocabIds ?? [])
-  const recallCandidates = learnedVocab.filter((item) => recentIds.has(item.id) && !currentIds.has(item.id))
-  const recallItem = shuffle(recallCandidates, rng)[0]
+  const candidates = learnedVocab.filter((item) => !currentIds.has(item.id))
+  // Приоритет — слова с ошибками: сначала самые проблемные, затем свежие
+  // из прошлого урока, затем любые изученные.
+  const stats = options.wordStats ?? {}
+  const weak = candidates
+    .filter((item) => (stats[item.id]?.errors ?? 0) > 0)
+    .sort((a, b) => (stats[b.id]?.errors ?? 0) - (stats[a.id]?.errors ?? 0))
+  const recent = candidates.filter((item) => recentIds.has(item.id))
+  const recallItem = weak.length > 0
+    ? weak[0]
+    : shuffle(recent, rng)[0] ?? shuffle(candidates, rng)[0]
   if (recallItem && exercises.length < goal - 1) {
-    const recall = buildReverseSelect(rng, recallItem, knownVocab.filter((item) => item.pos === recallItem.pos))
+    const recall = buildReverseSelect(rng, recallItem, distractorPool(vocab, recallItem.pos, learnedVocab, recallItem))
     if (recall) push(recall)
   }
 
-  // 2. Проверяем понимание знакомых фраз в контексте.
+  // 2. Сборка фраз — единственный тип, где ученик производит ответ сам,
+  // поэтому идёт раньше фразового выбора и получает до трёх заданий.
+  for (const sentenceId of lesson.sentenceIds) {
+    if (exercises.filter((exercise) => exercise.kind === 'build').length >= 3) break
+    if (exercises.length >= goal) break
+    const task = buildSentenceTask(rng, sentenceId, knownVocab)
+    if (task) push(task)
+  }
+
+  // 3. Понимание знакомых фраз в контексте — добираем оставшиеся фразы.
   for (const sentenceId of lesson.sentenceIds) {
     if (exercises.length >= goal - 1) break
     if (exercises.filter((exercise) => exercise.kind === 'select' && exercise.sentenceId).length >= 2) break
@@ -404,29 +517,21 @@ export function generateExercises(lessonId: string, target = 10): Exercise[] {
     if (select) push(select)
   }
 
-  // 3. Собираем только фразы, которые целиком покрыты уже изученными словами
-  // или устойчивыми выражениями. Неизвестные грамматические формы пропускаются.
-  for (const sentenceId of lesson.sentenceIds) {
-    if (exercises.filter((exercise) => exercise.kind === 'build').length >= 2) break
-    if (exercises.length >= goal - 1) break
-    const task = buildSentenceTask(rng, sentenceId, knownVocab)
-    if (task) push(task)
-  }
-
   // 4. Сопоставление пар: закрывает до пяти слов сразу, поэтому идёт до добора.
   const uncoveredNow = new Set(requiredIds.filter((id) => !covered().has(id)))
   const match = buildMatch(rng, vocab, 5, uncoveredNow)
   if (match && exercises.length < goal) push(match)
 
   // 5. Гарантия покрытия: каждое новое слово встречается хотя бы один раз.
+  // Это важнее лимита длины — иначе слова снова останутся без заданий.
   for (const id of shuffle(requiredIds, rng)) {
-    if (exercises.length >= goal) break
+    if (exercises.length >= MAX_LESSON_EXERCISES) break
     if (covered().has(id)) continue
     const item = knownVocabById.get(id)
     if (!item) continue
     // Сначала пробуем дистракторы той же части речи, затем — любые:
     // иначе редкое наречие или существительное остаётся без задания.
-    const strict = distractorPool(vocab, item.pos, learnedVocab)
+    const strict = distractorPool(vocab, item.pos, learnedVocab, item)
     const samePos = strict.filter((candidate) => candidate.id !== item.id)
     const pool = samePos.length >= 2 ? strict : anyPosPool(vocab, learnedVocab)
     const forward = usedPrompts.has(normalize(item.bxr)) ? null : buildSelect(rng, item, pool)
@@ -438,17 +543,18 @@ export function generateExercises(lessonId: string, target = 10): Exercise[] {
     if (reverse) push(reverse)
   }
 
-  // 6. Добираем обратным переводом, не повторяя прямой вопрос.
+  // 6. Добираем обратным переводом, не повторяя уже заданный вопрос.
   for (const item of ordered) {
     if (exercises.length >= goal) break
     if (exercises.some((exercise) => exercise.kind === 'select' && exercise.vocabId === item.id && !exercise.sentenceId)) continue
-    const reverse = buildReverseSelect(rng, item, distractorPool(vocab, item.pos, learnedVocab))
+    if (usedPrompts.has(normalize(item.ru))) continue
+    const reverse = buildReverseSelect(rng, item, distractorPool(vocab, item.pos, learnedVocab, item))
     if (reverse) push(reverse)
   }
 
   // Перемешиваем, но первое задание оставляем «выбор перевода» — мягкий вход.
   const [first, ...rest] = exercises
-  return [first, ...shuffle(rest, rng)].slice(0, goal).filter(Boolean)
+  return [first, ...shuffle(rest, rng)].slice(0, MAX_LESSON_EXERCISES).filter(Boolean)
 }
 
 export function exerciseCount(lessonId: string): number {
@@ -464,8 +570,11 @@ export function exerciseCount(lessonId: string): number {
 export function exerciseVocabIds(exercise: Exercise): string[] {
   if (exercise.kind === 'select') return exercise.relatedVocabIds ?? [exercise.vocabId]
   if (exercise.kind === 'match') return exercise.pairs.map((p) => p.vocabId)
+  // Для сборки берём слова, посчитанные при генерации по изученному словарю:
+  // повторная сегментация по всему курсу подхватывала слова из будущих уроков.
+  if (exercise.relatedVocabIds) return exercise.relatedVocabIds
 
   const sentence = getSentence(exercise.sentenceId)
   if (!sentence) return []
-  return segmentKnownSentence(sentence.bxr, [...course.vocab.values()])?.vocabIds ?? []
+  return segmentSentence(sentence.bxr, [...course.vocab.values()])?.vocabIds ?? []
 }

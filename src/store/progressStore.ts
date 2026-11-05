@@ -29,6 +29,8 @@ export interface ProgressState extends ProgressSnapshot {
    */
   totalMistakes: number
   totalExercises: number
+  /** Сколько раз запускали урок — соль для перемешивания заданий. */
+  lessonAttempts: Record<string, number>
 
   heartsNow: () => number
   regenHearts: () => void
@@ -68,6 +70,12 @@ export interface PersistedState extends XpCarrier {
   displayName: string
   syncedSignature: string | null
   resetPending: boolean
+  /**
+   * Сколько раз урок запускали. Нужен, чтобы повторное прохождение давало
+   * другой набор заданий, а не тот же самый. Локальная величина — в облако
+   * не уходит: это способ перемешивания, а не прогресс.
+   */
+  lessonAttempts: Record<string, number>
 }
 
 /** Сохраняет пройденные уроки при перенумерации первых трёх разделов. */
@@ -98,6 +106,7 @@ function emptyPersisted(): PersistedState {
     displayName: '',
     syncedSignature: null,
     resetPending: false,
+    lessonAttempts: {},
   }
 }
 
@@ -159,6 +168,11 @@ export const useProgress = create<ProgressState>()(
                 xp: (prev?.xp ?? 0) + result.xp,
                 completedAt: Date.now(),
               },
+            },
+            // Счётчик попыток нужен только для перемешивания заданий.
+            lessonAttempts: {
+              ...state.lessonAttempts,
+              [result.lessonId]: (state.lessonAttempts[result.lessonId] ?? 0) + 1,
             },
             ...grantXp(
               state,

@@ -87,6 +87,8 @@ export interface BuildExercise {
   /** Плитки: слова ответа + дистракторы, перемешаны. */
   tokens: string[]
   sentenceId: string
+  /** Слова из словаря, которые реально встретились в собранной фразе. */
+  relatedVocabIds?: string[]
 }
 
 export interface MatchPair {
