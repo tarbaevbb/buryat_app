@@ -1,61 +1,75 @@
 import type { VocabItem } from '../types'
 
 /**
- * Раздел 2. Тоо ба саг — числа и время.
+ * Раздел 3. Танилсалга — знакомство.
+ *
+ * Содержание взято из тематического списка фраз «Знакомство» (прислан
+ * носителем): приветствия по времени суток, имя и фамилия, возраст,
+ * происхождение и национальность. Бурятский текст сохранён как в источнике.
+ *
+ * Теги описывают тематику слов. Состав уроков задаётся явно в course.ts,
+ * чтобы повторяющиеся темы не переносили фразы в чужой урок.
  */
 export const unit3: VocabItem[] = [
-  // Числа 1–15
-  { id: 'neg', bxr: 'нэгэн', ru: 'один', pos: 'num', tags: ['number', 'num1_10'], transcription: 'нэгэн' },
-  { id: 'khoyor', bxr: 'хоёр', ru: 'два', pos: 'num', tags: ['number', 'num1_10'], transcription: 'хоёр' },
-  { id: 'gurba', bxr: 'гурбан', ru: 'три', pos: 'num', tags: ['number', 'num1_10'], transcription: 'гурбан' },
-  { id: 'durbe', bxr: 'дүрбэн', ru: 'четыре', pos: 'num', tags: ['number', 'num1_10'], transcription: 'дүрбэн' },
-  { id: 'taba', bxr: 'табан', ru: 'пять', pos: 'num', tags: ['number', 'num1_10'], transcription: 'табан' },
-  { id: 'zurgaa', bxr: 'зургаан', ru: 'шесть', pos: 'num', tags: ['number', 'num1_10'], transcription: 'зургаан' },
-  { id: 'dolo', bxr: 'долоон', ru: 'семь', pos: 'num', tags: ['number', 'num1_10'], transcription: 'долоон' },
-  { id: 'naima', bxr: 'найман', ru: 'восемь', pos: 'num', tags: ['number', 'num1_10'], transcription: 'найман' },
-  { id: 'yuhen', bxr: 'юһэн', ru: 'девять', pos: 'num', tags: ['number', 'num1_10'], transcription: 'юһэн' },
-  { id: 'arba', bxr: 'арбан', ru: 'десять', pos: 'num', tags: ['number', 'num1_10'], transcription: 'арбан' },
-  { id: 'arban_neg', bxr: 'арбан нэгэн', ru: 'одиннадцать', pos: 'num', tags: ['number', 'num11_19'] },
-  { id: 'arban_khoyor', bxr: 'арбан хоёр', ru: 'двенадцать', pos: 'num', tags: ['number', 'num11_19'] },
-  { id: 'arban_gurba', bxr: 'арбан гурбан', ru: 'тринадцать', pos: 'num', tags: ['number', 'num11_19'] },
-  { id: 'arban_durbe', bxr: 'арбан дүрбэн', ru: 'четырнадцать', pos: 'num', tags: ['number', 'num11_19'] },
-  { id: 'arban_taba', bxr: 'арбан табан', ru: 'пятнадцать', pos: 'num', tags: ['number', 'num11_19'] },
-  // Десятки
-  { id: 'khori', bxr: 'хорин', ru: 'двадцать', pos: 'num', tags: ['number', 'num10_100'], transcription: 'хорин' },
-  { id: 'guchi', bxr: 'гушан', ru: 'тридцать', pos: 'num', tags: ['number', 'num10_100'], transcription: 'гушан' },
-  { id: 'dushi', bxr: 'дүшэн', ru: 'сорок', pos: 'num', tags: ['number', 'num10_100'], transcription: 'дүшэн' },
-  { id: 'tabi', bxr: 'табин', ru: 'пятьдесят', pos: 'num', tags: ['number', 'num10_100'], transcription: 'табин' },
-  { id: 'zhara', bxr: 'жаран', ru: 'шестьдесят', pos: 'num', tags: ['number', 'num10_100'], transcription: 'жаран' },
-  { id: 'dala', bxr: 'далан', ru: 'семьдесят', pos: 'num', tags: ['number', 'num10_100'], transcription: 'далан' },
-  { id: 'naya', bxr: 'наян', ru: 'восемьдесят', pos: 'num', tags: ['number', 'num10_100'], transcription: 'наян' },
-  { id: 'yere', bxr: 'ерэн', ru: 'девяносто', pos: 'num', tags: ['number', 'num10_100'], transcription: 'ерэн' },
-  { id: 'zuu', bxr: 'зуун', ru: 'сто', pos: 'num', tags: ['number', 'num10_100'], transcription: 'зуун' },
-  // Дни недели
-  { id: 'd1', bxr: 'дабаа', ru: 'понедельник', pos: 'noun', tags: ['weekday', 'time'] },
-  { id: 'd2', bxr: 'мягмар', ru: 'вторник', pos: 'noun', tags: ['weekday', 'time'], transcription: 'мягмар' },
-  { id: 'd3', bxr: 'лхагба', ru: 'среда', pos: 'noun', tags: ['weekday', 'time'], note: 'Произносится как һагба' },
-  { id: 'd4', bxr: 'пүрбэ', ru: 'четверг', pos: 'noun', tags: ['weekday', 'time'], transcription: 'пүрбэ' },
-  { id: 'd5', bxr: 'баасан', ru: 'пятница', pos: 'noun', tags: ['weekday', 'time'], transcription: 'баасан' },
-  { id: 'd6', bxr: 'бямба', ru: 'суббота', pos: 'noun', tags: ['weekday', 'time'], transcription: 'бямба' },
-  { id: 'd7', bxr: 'нима', ru: 'воскресенье', pos: 'noun', tags: ['weekday', 'time'], transcription: 'нима', note: 'Также встречается форма няма.' },
-  // Время
-  { id: 'sag', bxr: 'саг', ru: 'время, час', pos: 'noun', tags: ['time'], transcription: 'саг' },
-  { id: 'ude', bxr: 'үдэ', ru: 'полдень', pos: 'noun', tags: ['time'], transcription: 'үдэ' },
-  { id: 'uder', bxr: 'үдэр', ru: 'день', pos: 'noun', tags: ['time'], transcription: 'үдэр' },
-  { id: 'munouder', bxr: 'мүнөөдэр', ru: 'сегодня', pos: 'noun', tags: ['time'], transcription: 'мүнөөдэр' },
-  { id: 'odo', bxr: 'одоо', ru: 'сейчас', pos: 'adv', tags: ['time'], transcription: 'одоо' },
-  { id: 'ugloo', bxr: 'үглөө', ru: 'завтра', pos: 'adj', tags: ['time'] },
-  { id: 'usergelder', bxr: 'үсэгэлдэр', ru: 'вчера', pos: 'adj', tags: ['time'] },
-  { id: 'sag_hedy_bolozho_bainab', bxr: 'Саг хэды боложо байнаб?', ru: 'Который час?', pos: 'phrase', tags: ['time'] },
-  { id: 'munuu_naiman_chas', bxr: 'Мүнөө найман час боложо байна.', ru: 'Сейчас восемь часов.', pos: 'phrase', tags: ['time'] },
+  // --- Приветствия и вежливость ---
+  { id: 'sain_baina_greet', bxr: 'Сайн байна!', ru: 'Здравствуйте!', pos: 'phrase', tags: ['greet_day'] },
+  { id: 'mendee_greet', bxr: 'Мэндээ!', ru: 'Привет!', ruAlternatives: ['Здравствуйте!'], pos: 'phrase', tags: ['greet_day'] },
+  { id: 'ugluuney_mende', bxr: 'Үглөөнэй мэндэ!', ru: 'Доброе утро!', pos: 'phrase', tags: ['greet_day'] },
+  { id: 'uderey_mende', bxr: 'Үдэрэй мэндэ!', ru: 'Добрый день!', pos: 'phrase', tags: ['greet_day'] },
+  { id: 'udesyn_mende', bxr: 'Үдэшын мэндэ!', ru: 'Добрый вечер!', pos: 'phrase', tags: ['greet_day'] },
+  { id: 'khulisegty', bxr: 'Хүлисэгты', ru: 'Извините', pos: 'phrase', tags: ['greet_day'] },
+  { id: 'bayarla', bxr: 'баярлалаа', ru: 'спасибо', pos: 'phrase', tags: ['greet_day'] },
+  { id: 'bayartai', bxr: 'баяртай', ru: 'до свидания', pos: 'phrase', tags: ['greet_day'] },
+  { id: 'honin_yuun_be', bxr: 'һонин юун бэ?', ru: 'Что нового?', pos: 'phrase', tags: ['greet_day'] },
+
+  // --- Имя, фамилия, отчество ---
+  { id: 'minii_nere', bxr: 'Минии нэрэ…', ru: 'Меня зовут…', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'famili_mini', bxr: 'Фамилимни…', ru: 'Моя фамилия…', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'obogtoib', bxr: '… гэжэ обогтойб', ru: 'Моё отчество…', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'shii_khen_nereteibshi', bxr: 'Ши хэн гэжэ нэрэтэйбши?', ru: 'Как тебя зовут?', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'shii_khen_famili', bxr: 'Ши хэн гэжэ фамилитайбши?', ru: 'Как твоя фамилия?', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'khen_obogtoibshi', bxr: 'Хэн гэжэ обогтойбши?', ru: 'Как ваше отчество?', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'neree_khelys', bxr: 'Нэрээ хэлыш даа', ru: 'Назови своё имя', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'neree_beshegdedeg', bxr: 'Танай нэрэ яагаад бэшэгдэдэг бэ?', ru: 'Как пишется ваше имя?', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'nereer_duudakha', bxr: 'Би таниие нэрээртнай дуудахаб', ru: 'Я буду звать вас по имени', pos: 'phrase', tags: ['intro_name'] },
+  { id: 'nere', bxr: 'нэрэ', ru: 'имя', pos: 'noun', tags: ['intro_name'], transcription: 'нэрэ' },
+
+  // --- Возраст ---
+  { id: 'shii_khedyteibshi', bxr: 'Ши хэдытэйбши?', ru: 'Сколько тебе лет?', pos: 'phrase', tags: ['intro_age'] },
+  { id: 'bi_arbataib', bxr: 'Би арбатайб', ru: 'Мне 10 лет', pos: 'phrase', tags: ['intro_age'] },
+  { id: 'ta_nahaa_khusenkhei', bxr: 'Та наһаа хүсэнхэй гүт?', ru: 'Вы совершеннолетний?', pos: 'phrase', tags: ['intro_age'] },
+  { id: 'bi_usheo', bxr: 'Үгы, би үшөө наһаяа хүсөөдүйб', ru: 'Нет, я ещё несовершеннолетний', pos: 'phrase', tags: ['intro_age'] },
+  { id: 'ta_khezee_turoobta', bxr: 'Та хэзээ түрөөбта?', ru: 'Когда вы родились?', pos: 'phrase', tags: ['intro_age'] },
+  { id: 'bi_july', bxr: 'Би июлиин дүрбэндэ түрэһэнби.', ru: 'Я родился четвертого июля', pos: 'phrase', tags: ['intro_age'] },
+  { id: 'bi_1994', bxr: 'Би арбан юһэн дүшэн дүрбэн ондо түрэһэнби', ru: 'Я родился в тысяча девятьсот девяносто четвёртом году', pos: 'phrase', tags: ['intro_age'] },
+  { id: 'turehen_uderi', bxr: 'Танай түрэһэн үдэр хэзээб?', ru: 'Какого числа ваш день рождения?', pos: 'phrase', tags: ['intro_age'] },
+  { id: 'bi', bxr: 'би', ru: 'я', pos: 'pron', tags: ['intro_age'], transcription: 'би' },
+  { id: 'shi', bxr: 'ши', ru: 'ты', pos: 'pron', tags: ['intro_age'], transcription: 'ши' },
+  { id: 'ta', bxr: 'та', ru: 'вы', pos: 'pron', tags: ['intro_age'], transcription: 'та' },
+
+  // --- Откуда вы и кто по национальности ---
+  { id: 'ta_khaanahaa', bxr: 'Та хаанаһаа ерээбта?', ru: 'Откуда вы приехали?', pos: 'phrase', tags: ['intro_origin'] },
+  { id: 'ta_khaanakhibta', bxr: 'Та хаанахибта?', ru: 'Откуда вы родом?', pos: 'phrase', tags: ['intro_origin'] },
+  { id: 'ta_yamar_yahanaipta', bxr: 'Та ямар яһанайбта?', ru: 'Какая у вас национальность?', pos: 'phrase', tags: ['intro_origin'] },
+  { id: 'bi_buryaad', bxr: 'Би буряад яһанайб', ru: 'Я по национальности бурят', pos: 'phrase', tags: ['intro_origin'] },
+  { id: 'bi_orod', bxr: 'Би ород яһанайб', ru: 'Я по национальности русский', pos: 'phrase', tags: ['intro_origin'] },
+  { id: 'tanilhan_bayartai', bxr: 'Тантай танилсаһандаа ехэ баяртай байнаб', ru: 'Я очень рад, что познакомился с вами', pos: 'phrase', tags: ['intro_origin'] },
+  { id: 'yaazha_uulzaba', bxr: 'Яажа шамтай уулзаба гээшэбиб!', ru: 'Как хорошо, что я тебя встретил!', pos: 'phrase', tags: ['intro_origin'] },
+  { id: 'holiin_turel', bxr: 'Бидэ холын түрэлбди', ru: 'Мы дальние родственники', pos: 'phrase', tags: ['intro_origin'] },
+  { id: 'turel_beshe', bxr: 'Тэрэ намтай түрэл бэшэ', ru: 'Он мне не родственник', pos: 'phrase', tags: ['intro_origin'] },
 ]
 
 export const unit3Sentences = [
-  { id: 'u2s1', bxr: 'Нэгэн, хоёр, гурбан.', ru: 'Один, два, три.', tags: ['number', 'u2'] },
-  { id: 'u2s2', bxr: 'Хорин, гушан, дүшэн.', ru: 'Двадцать, тридцать, сорок.', tags: ['number', 'u2'] },
-  { id: 'u2s3', bxr: 'Саг хэды боложо байнаб?', ru: 'Который час?', tags: ['time', 'question', 'u2'] },
-  { id: 'u2s4', bxr: 'Мүнөө найман час боложо байна.', ru: 'Сейчас восемь часов.', tags: ['time', 'u2'] },
-  { id: 'u2s5', bxr: 'Мүнөөдэр гарагай хоёр.', ru: 'Сегодня понедельник.', tags: ['weekday', 'u2'] },
-  { id: 'u2s6', bxr: 'Табан талха.', ru: 'Пять лепёшек.', tags: ['number', 'food', 'u2'] },
-  { id: 'u2s7', bxr: 'Гурбан гурба хэдыб?', ru: 'Сколько будет трижды три?', tags: ['number', 'u2'] },
+  { id: 'u3s1', bxr: 'Сайн байна!', ru: 'Здравствуйте!', tags: ['greet_day', 'u3'] },
+  { id: 'u3s2', bxr: 'Мэндээ!', ru: 'Привет!', tags: ['greet_day', 'u3'] },
+  { id: 'u3s3', bxr: 'Үглөөнэй мэндэ!', ru: 'Доброе утро!', tags: ['greet_day', 'u3'] },
+  { id: 'u3s4', bxr: 'Үдэрэй мэндэ!', ru: 'Добрый день!', tags: ['greet_day', 'u3'] },
+  { id: 'u3s5', bxr: 'Үдэшын мэндэ!', ru: 'Добрый вечер!', tags: ['greet_day', 'u3'] },
+  { id: 'u3s6', bxr: 'Ши хэн гэжэ нэрэтэйбши?', ru: 'Как тебя зовут?', tags: ['intro_name', 'u3'] },
+  { id: 'u3s7', bxr: 'Би арбатайб', ru: 'Мне 10 лет', tags: ['intro_age', 'u3'] },
+  { id: 'u3s8', bxr: 'Ши хэдытэйбши?', ru: 'Сколько тебе лет?', tags: ['intro_age', 'u3'] },
+  { id: 'u3s9', bxr: 'Би буряад яһанайб', ru: 'Я по национальности бурят', tags: ['intro_origin', 'u3'] },
+  { id: 'u3s10', bxr: 'Та хаанаһаа ерээбта?', ru: 'Откуда вы приехали?', tags: ['intro_origin', 'u3'] },
+  { id: 'u3s11', bxr: 'Би ехэ баяртай байнаб', ru: 'Я очень рад', tags: ['intro_origin', 'u3'] },
+  { id: 'u3s12', bxr: 'Хүлисэгты', ru: 'Извините', tags: ['greet_day', 'u3'] },
 ]
