@@ -160,7 +160,7 @@ const unitSpecs: UnitSpec[] = [
     emoji: '👨‍👩‍👧',
     lessons: [
       { id: 'u4l1', title: 'Родители и семья', titleBxr: 'Аба эжы', vocabIds: ['aba', 'ezhy', 'bule', 'ger_bule', 'naha', 'ubgen_aba', 'khugshe_ezhy', 'ene_munuu_ubgen_aba', 'bide_ubgen_aba_haa_huraataibdi'], sentenceIds: ['u4s7', 'u4s9'] },
-      { id: 'u4l2', title: 'Братья, сёстры и друзья', titleBxr: 'Аха дүүнэр', vocabIds: ['aha', 'egeshe', 'duu', 'khoyor_duu', 'nagasa', 'abagai', 'nukher', 'ene_minii_nukher_badma'], sentenceIds: ['u4s6', 'u4s8'] },
+      { id: 'u4l2', title: 'Братья, сёстры и друзья', titleBxr: 'Аха дүүнэр', vocabIds: ['aha', 'egeshe', 'duu_hubuun', 'duu_basagan', 'khoyor_duu', 'nagasa', 'abagai', 'nukher', 'ene_minii_nukher_badma'], sentenceIds: ['u4s6', 'u4s8'] },
       { id: 'u4l3', title: 'Дети и возраст', titleBxr: 'Хүүгэд ба наһан', vocabIds: ['khubun', 'basagan', 'nasta', 'khugshe', 'zaluu'], sentenceIds: ['u4s5'] },
       { id: 'u4l4', title: 'Люди и занятия', titleBxr: 'Хүнүүд ба ажал', vocabIds: ['uulzaha', 'durakhai', 'khairtai', 'ajil', 'ajilsha', 'baha', 'orda', 'zurag', 'ongoso', 'gar'], sentenceIds: [] },
       {
@@ -168,7 +168,7 @@ const unitSpecs: UnitSpec[] = [
         title: 'Повторение раздела',
         titleBxr: 'Дахин һанаха',
         kind: 'review',
-        vocabIds: ['aba', 'ezhy', 'aha', 'egeshe', 'duu', 'khubun', 'basagan', 'ubgen_aba', 'khugshe_ezhy', 'nukher', 'ene_munuu_ubgen_aba', 'ene_minii_nukher_badma', 'bide_ubgen_aba_haa_huraataibdi', 'nagasa', 'abagai', 'khugshe', 'zaluu', 'bule', 'naha', 'nasta', 'khoyor_duu', 'ger_bule', 'uulzaha', 'durakhai', 'khairtai', 'ajil', 'ajilsha', 'baha', 'orda', 'zurag', 'ongoso', 'gar'],
+        vocabIds: ['aba', 'ezhy', 'aha', 'egeshe', 'duu_hubuun', 'duu_basagan', 'khubun', 'basagan', 'ubgen_aba', 'khugshe_ezhy', 'nukher', 'ene_munuu_ubgen_aba', 'ene_minii_nukher_badma', 'bide_ubgen_aba_haa_huraataibdi', 'nagasa', 'abagai', 'khugshe', 'zaluu', 'bule', 'naha', 'nasta', 'khoyor_duu', 'ger_bule', 'uulzaha', 'durakhai', 'khairtai', 'ajil', 'ajilsha', 'baha', 'orda', 'zurag', 'ongoso', 'gar'],
         sentenceIds: ['u4s6', 'u4s7', 'u4s8', 'u4s9'],
       },
     ],

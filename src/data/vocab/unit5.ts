@@ -23,7 +23,7 @@ export const unit5: VocabItem[] = [
   // Напитки
   { id: 'hutai_sai', bxr: 'һүтэй сай', ru: 'чай с молоком', pos: 'phrase', tags: ['food', 'drink'], transcription: 'һүтэй сай' },
   { id: 'sai_uukha_gut', bxr: 'Сай ууха гүт?', ru: 'Будете пить чай?', pos: 'phrase', tags: ['drink'] },
-  { id: 'hun', bxr: 'һүн', ru: 'молоко', pos: 'phrase', tags: ['drink'] },
+  { id: 'huen', bxr: 'һүн', ru: 'молоко', pos: 'phrase', tags: ['drink'] },
   // Посуда и быт
   { id: 'ayaga', bxr: 'аяга', ru: 'чашка', pos: 'noun', tags: ['home', 'dish'], transcription: 'аяга' },
   { id: 'tabag', bxr: 'табаг', ru: 'тарелка', pos: 'noun', tags: ['home', 'dish'] },

@@ -14,7 +14,7 @@ export const unit1: VocabItem[] = [
   { id: 'hun', bxr: 'хүн', ru: 'человек', transcription: 'хүн', pos: 'noun', tags: ['reading', 'vowel_oe'] },
   { id: 'ughe', bxr: 'үгэ', ru: 'слово', transcription: 'үгэ', pos: 'noun', tags: ['reading', 'vowel_oe'] },
   { id: 'uzeg', bxr: 'үзэг', ru: 'буква', transcription: 'үзэг', pos: 'noun', tags: ['reading', 'vowel_oe'] },
-  { id: 'huen', bxr: 'һүн', ru: 'молоко', transcription: 'һүн', pos: 'noun', tags: ['reading', 'vowel_oe', 'sound_h'], note: 'сүү — вариант написания' },
+  // { id: 'huen', bxr: 'һүн', ru: 'молоко', transcription: 'һүн', pos: 'noun', tags: ['reading', 'vowel_oe', 'sound_h'], note: 'сүү — вариант написания' },
 
   // --- Звук һ ---
   { id: 'usun', bxr: 'уһан', ru: 'вода', transcription: 'уһан', pos: 'noun', tags: ['reading', 'sound_h'] },
