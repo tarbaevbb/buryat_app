@@ -49,6 +49,62 @@ describe('генерация упражнений', () => {
     }
   })
 
+  /**
+   * Каждое новое слово урока обязано встретиться хотя бы в одном задании.
+   * Иначе оно попадает в урок только как дистрактор и не изучается.
+   */
+  it('каждое новое слово урока отрабатывается хотя бы раз', () => {
+    for (const lesson of course.lessons) {
+      const covered = new Set<string>()
+      for (const exercise of generateExercises(lesson.id)) {
+        for (const id of exerciseVocabIds(exercise)) covered.add(id)
+      }
+      const missing = lesson.newVocabIds.filter(
+        (id) => !covered.has(id) && Boolean(getVocab(id)) && !getVocab(id)?.needsReview,
+      )
+      expect(missing, `урок ${lesson.id}: без заданий остались ${missing.join(', ')}`).toEqual([])
+    }
+  })
+
+  /** Два варианта — это угадывание 50/50, а не проверка знания. */
+  it('в выборе всегда не меньше трёх вариантов', () => {
+    for (const lesson of course.lessons) {
+      for (const exercise of generateExercises(lesson.id)) {
+        if (exercise.kind !== 'select') continue
+        expect(
+          exercise.options.length,
+          `урок ${lesson.id}: «${exercise.prompt}» — ${exercise.options.length} варианта`,
+        ).toBeGreaterThanOrEqual(3)
+      }
+    }
+  })
+
+  /** Один и тот же вопрос дважды в уроке — лишний шаг без новой информации. */
+  it('не повторяет один и тот же вопрос в уроке', () => {
+    for (const lesson of course.lessons) {
+      const seen = new Set<string>()
+      for (const exercise of generateExercises(lesson.id)) {
+        if (exercise.kind === 'match') continue
+        const key = `${exercise.promptLang}:${normalize(exercise.prompt)}`
+        expect(seen.has(key), `урок ${lesson.id}: «${exercise.prompt}» встречается дважды`).toBe(false)
+        seen.add(key)
+      }
+    }
+  })
+
+  /** Число заданий должно догонять размер словаря, иначе слова не помещаются. */
+  it('длина урока растёт вместе с числом новых слов', () => {
+    for (const lesson of course.lessons) {
+      const exercises = generateExercises(lesson.id)
+      const newWords = lesson.newVocabIds.filter(
+        (id) => Boolean(getVocab(id)) && !getVocab(id)?.needsReview,
+      )
+      expect(exercises.length, `урок ${lesson.id} (${newWords.length} новых слов)`).toBeGreaterThanOrEqual(
+        newWords.length,
+      )
+    }
+  })
+
   it('во всех заданиях есть правильный ответ', () => {
     for (const lesson of course.lessons) {
       for (const ex of generateExercises(lesson.id)) {

@@ -18,8 +18,6 @@ export interface VocabItem {
   ru: string
   /** Допустимые варианты перевода, которые тоже считаются правильными. */
   ruAlternatives?: string[]
-  /** Приблизительная транскрипция для отработки чтения. */
-  transcription?: string
   pos: Pos
   tags: string[]
   note?: string

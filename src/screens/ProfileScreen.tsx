@@ -175,11 +175,6 @@ export function ProfileScreen() {
             checked={settings.haptics}
             onChange={settings.setHaptics}
           />
-          <Toggle
-            label="Показывать транскрипцию"
-            checked={settings.showTranscription}
-            onChange={settings.setShowTranscription}
-          />
         </section>
 
         {/* Действия */}

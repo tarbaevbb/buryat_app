@@ -32,7 +32,7 @@ export const unit3: VocabItem[] = [
   { id: 'neree_khelys', bxr: 'Нэрээ хэлыш даа', ru: 'Назови своё имя', pos: 'phrase', tags: ['intro_name'] },
   { id: 'neree_beshegdedeg', bxr: 'Танай нэрэ яагаад бэшэгдэдэг бэ?', ru: 'Как пишется ваше имя?', pos: 'phrase', tags: ['intro_name'] },
   { id: 'nereer_duudakha', bxr: 'Би таниие нэрээртнай дуудахаб', ru: 'Я буду звать вас по имени', pos: 'phrase', tags: ['intro_name'] },
-  { id: 'nere', bxr: 'нэрэ', ru: 'имя', pos: 'noun', tags: ['intro_name'], transcription: 'нэрэ' },
+  { id: 'nere', bxr: 'нэрэ', ru: 'имя', pos: 'noun', tags: ['intro_name'] },
 
   // --- Возраст ---
   { id: 'shii_khedyteibshi', bxr: 'Ши хэдытэйбши?', ru: 'Сколько тебе лет?', pos: 'phrase', tags: ['intro_age'] },
@@ -43,9 +43,9 @@ export const unit3: VocabItem[] = [
   { id: 'bi_july', bxr: 'Би июлиин дүрбэндэ түрэһэнби.', ru: 'Я родился четвертого июля', pos: 'phrase', tags: ['intro_age'] },
   { id: 'bi_1994', bxr: 'Би арбан юһэн дүшэн дүрбэн ондо түрэһэнби', ru: 'Я родился в тысяча девятьсот девяносто четвёртом году', pos: 'phrase', tags: ['intro_age'] },
   { id: 'turehen_uderi', bxr: 'Танай түрэһэн үдэр хэзээб?', ru: 'Какого числа ваш день рождения?', pos: 'phrase', tags: ['intro_age'] },
-  { id: 'bi', bxr: 'би', ru: 'я', pos: 'pron', tags: ['intro_age'], transcription: 'би' },
-  { id: 'shi', bxr: 'ши', ru: 'ты', pos: 'pron', tags: ['intro_age'], transcription: 'ши' },
-  { id: 'ta', bxr: 'та', ru: 'вы', pos: 'pron', tags: ['intro_age'], transcription: 'та' },
+  { id: 'bi', bxr: 'би', ru: 'я', pos: 'pron', tags: ['intro_age'] },
+  { id: 'shi', bxr: 'ши', ru: 'ты', pos: 'pron', tags: ['intro_age'] },
+  { id: 'ta', bxr: 'та', ru: 'вы', pos: 'pron', tags: ['intro_age'] },
 
   // --- Откуда вы и кто по национальности ---
   { id: 'ta_khaanahaa', bxr: 'Та хаанаһаа ерээбта?', ru: 'Откуда вы приехали?', pos: 'phrase', tags: ['intro_origin'] },
