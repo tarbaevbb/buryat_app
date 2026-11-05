@@ -4,7 +4,7 @@ import { TopBar } from '../components/TopBar'
 import { OptionCard } from '../components/Button'
 import { useProgress } from '../store/progressStore'
 import { pickReviewWords } from '../lib/srs'
-import { isCorrect } from '../lib/normalize'
+import { normalize } from '../lib/normalize'
 import { reviewXp } from '../lib/progress'
 import { feedback, primeFeedback } from '../lib/feedback'
 import { course } from '../data/course'
@@ -55,7 +55,7 @@ export function ReviewScreen() {
     if (!current || wrongPicks.includes(option)) return
     primeFeedback()
 
-    if (isCorrect(option, current.ru)) {
+    if (normalize(option) === normalize(current.ru)) {
       feedback('correct')
       recordWord(current.id, true)
       setSolved((n) => n + 1)
@@ -143,9 +143,6 @@ export function ReviewScreen() {
             </p>
             <div className="mb-5 rounded-2xl bg-tg-secondary-bg p-5 text-center">
               <p className="text-2xl font-black">{current.bxr}</p>
-              {current.transcription && (
-                <p className="mt-1 text-sm text-tg-hint">[{current.transcription}]</p>
-              )}
             </div>
             <div className="grid gap-3">
               {options.map((option) => {

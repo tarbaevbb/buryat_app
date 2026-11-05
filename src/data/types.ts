@@ -68,8 +68,6 @@ export type ExerciseKind = 'select' | 'build' | 'match'
 export interface SelectExercise {
   kind: 'select'
   id: string
-  /** meaning — выбрать перевод; reading — выбрать транскрипцию. */
-  mode: 'meaning' | 'reading'
   promptLang: 'ru' | 'bxr'
   prompt: string
   answer: string

@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Volume2 } from 'lucide-react'
 import type { SelectExercise } from '../../../data/types'
-import { isCorrect } from '../../../lib/normalize'
+import { normalize } from '../../../lib/normalize'
 import { OptionCard } from '../../../components/Button'
 import { feedback, primeFeedback } from '../../../lib/feedback'
 
@@ -23,7 +22,7 @@ export function SelectExerciseView({ exercise, checked, onWrong, onCorrect }: Pr
   const [shaking, setShaking] = useState<{ option: string; key: number } | null>(null)
   const acceptedAnswers = exercise.acceptedAnswers ?? [exercise.answer]
   const isAcceptedAnswer = (option: string) =>
-    acceptedAnswers.some((answer) => isCorrect(option, answer))
+    acceptedAnswers.some((answer) => normalize(option) === normalize(answer))
 
   useEffect(() => {
     setWrongPicks([])
@@ -49,12 +48,7 @@ export function SelectExerciseView({ exercise, checked, onWrong, onCorrect }: Pr
     onWrong()
   }
 
-  const title =
-    exercise.mode === 'reading'
-      ? 'Как это читается?'
-      : exercise.promptLang === 'bxr'
-        ? 'Что это значит?'
-        : 'Как сказать по-бурятски?'
+  const title = exercise.promptLang === 'bxr' ? 'Что это значит?' : 'Как сказать по-бурятски?'
 
   return (
     <div className="animate-pop-in">
@@ -62,12 +56,6 @@ export function SelectExerciseView({ exercise, checked, onWrong, onCorrect }: Pr
 
       <div className="mb-6 rounded-2xl bg-tg-secondary-bg p-5 text-center">
         <p className="text-2xl font-black leading-snug">{exercise.prompt}</p>
-        {exercise.mode === 'meaning' && (
-          <span className="mt-3 flex items-center justify-center gap-1.5 text-sm font-semibold text-tg-hint">
-            <Volume2 size={16} />
-            прочитайте вслух
-          </span>
-        )}
       </div>
 
       <div className="grid gap-3">

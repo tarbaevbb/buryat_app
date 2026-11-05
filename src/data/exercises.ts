@@ -67,46 +67,11 @@ function buildSelect(
   return {
     kind: 'select',
     id: `select:${vocab.id}`,
-    mode: 'meaning',
     promptLang: 'bxr',
     prompt: vocab.bxr,
     answer: vocab.ru,
     options: all,
     acceptedAnswers: answers,
-    vocabId: vocab.id,
-  }
-}
-
-/** Задание «выбери правильное чтение» — только для слов со транскрипцией. */
-function buildReading(
-  rng: () => number,
-  vocab: VocabItem,
-  pool: VocabItem[],
-): SelectExercise | null {
-  if (!vocab.transcription) return null
-  // Транскрипция совпадает с написанием (хүн → хүн): задание бессмысленно —
-  // вопрос и ответ одинаковы, сравнивать нечего.
-  if (normalize(vocab.transcription) === normalize(vocab.bxr)) return null
-  const answerKey = normalize(vocab.transcription)
-  const seen = new Set([answerKey])
-  const candidates = pool.filter((v) => {
-    if (!v.transcription) return false
-    const key = normalize(v.transcription)
-    if (seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
-  if (candidates.length < 2) return null
-  const wrong = shuffle(candidates, rng).slice(0, 2)
-  const all = shuffle([vocab, ...wrong], rng)
-  return {
-    kind: 'select',
-    id: `reading:${vocab.id}`,
-    mode: 'reading',
-    promptLang: 'bxr',
-    prompt: vocab.bxr,
-    answer: vocab.transcription as string,
-    options: all.map((v) => v.transcription as string),
     vocabId: vocab.id,
   }
 }
@@ -236,18 +201,7 @@ export function generateExercises(lessonId: string, target = 10): Exercise[] {
     if (task) exercises.push(task)
   }
 
-  // 3. Задание на чтение (транскрипция).
-  const readingCandidate = ordered.find((v) => v.transcription)
-  if (readingCandidate && exercises.length < target) {
-    const reading = buildReading(
-      rng,
-      readingCandidate,
-      distractorPool(vocab, readingCandidate.pos, learnedVocab),
-    )
-    if (reading) exercises.push(reading)
-  }
-
-  // 4. Добираем выбором перевода в обратную сторону (ru → bxr).
+  // 3. Добираем выбором перевода в обратную сторону (ru → bxr).
   for (const item of ordered) {
     if (exercises.length >= target - 1) break
     const answerKey = normalize(item.bxr)
@@ -266,7 +220,6 @@ export function generateExercises(lessonId: string, target = 10): Exercise[] {
     exercises.push({
       kind: 'select',
       id: `reverse:${item.id}`,
-      mode: 'meaning',
       promptLang: 'ru',
       prompt: item.ru,
       answer: item.bxr,
@@ -275,7 +228,7 @@ export function generateExercises(lessonId: string, target = 10): Exercise[] {
     })
   }
 
-  // 5. Завершаем сопоставлением пар.
+  // 4. Завершаем сопоставлением пар.
   const match = buildMatch(rng, vocab)
   if (match && exercises.length < target) exercises.push(match)
 

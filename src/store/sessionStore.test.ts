@@ -4,8 +4,8 @@ import { generateExercises } from '../data/exercises'
 import type { Exercise } from '../data/types'
 
 const stub: Exercise[] = [
-  { kind: 'select', id: 's1', mode: 'meaning', promptLang: 'bxr', prompt: 'гэр', answer: 'дом', options: ['дом', 'вода'], vocabId: 'ger' },
-  { kind: 'select', id: 's2', mode: 'meaning', promptLang: 'bxr', prompt: 'сай', answer: 'чай', options: ['чай', 'дом'], vocabId: 'sai' },
+  { kind: 'select', id: 's1', promptLang: 'bxr', prompt: 'гэр', answer: 'дом', options: ['дом', 'вода'], vocabId: 'ger' },
+  { kind: 'select', id: 's2', promptLang: 'bxr', prompt: 'сай', answer: 'чай', options: ['чай', 'дом'], vocabId: 'sai' },
 ]
 
 function reset() {

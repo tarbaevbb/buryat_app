@@ -8,15 +8,18 @@ import { HEART_REFILL_MS, MAX_HEARTS, reviewXp } from './progress'
  * (файл supabase/schema.sql был дубликатом и удалён). Если миграций
  * станет несколько, содержимое просто склеится в порядке применения.
  *
- * `latest` — последняя миграция: она описывает итоговое состояние схемы,
- * поэтому проверки «как сейчас устроено» смотрят в неё, а не в историю.
+ * Отдельные проверки смотрят в миграцию, которая внесла соответствующее
+ * изменение; последняя миграция может менять только данные курса.
  */
 const migrationsDir = resolve(process.cwd(), 'supabase/migrations')
 const files = readdirSync(migrationsDir)
   .filter((f) => f.endsWith('.sql'))
   .sort()
 const schema = files.map((f) => readFileSync(resolve(migrationsDir, f), 'utf8')).join('\n')
-const latest = readFileSync(resolve(migrationsDir, files[files.length - 1]), 'utf8')
+const heartMigration = readFileSync(
+  resolve(migrationsDir, '20261103120000_remove_gems_20_hearts.sql'),
+  'utf8',
+)
 
 /**
  * Формулы награды и восстановления сердец продублированы на клиенте
@@ -51,14 +54,14 @@ describe('согласованность клиента и схемы Supabase',
 
   it('механика гемов удалена из схемы', () => {
     // Колонка, начисления и выдача в снимке — всё должно исчезнуть.
-    expect(latest).toContain('drop column if exists gems')
-    expect(latest).not.toContain('gems = p.gems')
-    expect(latest).not.toContain("'gems'")
+    expect(heartMigration).toContain('drop column if exists gems')
+    expect(heartMigration).not.toContain('gems = p.gems')
+    expect(heartMigration).not.toContain("'gems'")
   })
 
   it('сброс прогресса обнуляет XP и серию, оставляя полный запас сердец', () => {
     expect(schema).toContain('fn_reset_progress')
-    expect(latest).toMatch(/set xp = 0,\s+hearts = 20/)
+    expect(heartMigration).toMatch(/set xp = 0,\s+hearts = 20/)
   })
 
   it('все RPC, которые вызывает клиент, объявлены в схеме', () => {
@@ -78,7 +81,7 @@ describe('согласованность клиента и схемы Supabase',
 
   it('сердца на сервере ограничены двадцатью', () => {
     expect(MAX_HEARTS).toBe(20)
-    expect(latest).toContain('least(20, greatest(0, coalesce(p_hearts, 20))')
+    expect(heartMigration).toContain('least(20, greatest(0, coalesce(p_hearts, 20))')
   })
 
   it('сервер не суммирует XP при отправке снимка (идемпотентность)', () => {
@@ -106,7 +109,7 @@ describe('согласованность клиента и схемы Supabase',
 
   it('каждая начисляющая функция возвращает total_xp, а не level_xp', () => {
     // Клиент читает server.totalXp из поля total_xp.
-    expect(latest).toContain('returns table (xp integer, streak integer, total_xp integer)')
+    expect(schema).toContain('returns table (xp integer, streak integer, total_xp integer)')
     expect(schema).not.toContain('level_xp integer')
   })
 })
